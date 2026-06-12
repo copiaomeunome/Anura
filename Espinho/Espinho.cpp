@@ -6,13 +6,6 @@ Espinho::Espinho(int d, pair<int,int> p, pair<int,int> t) {
     tamanho = t;
 }
 
-void Espinho::andarX(int quantidade) {
-    posicao.first += quantidade;
-}
-
-void Espinho::andarY(int quantidade) {
-    posicao.second += quantidade;
-}
 
 int Espinho::getX() {
     return posicao.first;

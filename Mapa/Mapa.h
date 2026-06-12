@@ -4,28 +4,29 @@
 #include <vector>
 #include <utility>
 #include "../Espinho/Espinho.h"
+#include "../Parede/Parede.h"
 
 using namespace std;
 
 class Mapa {
-private:
-    pair<int,int> tamanho;
-    pair<int,int> posicao_protagonista;
-    vector<Espinho> espinhos;
+    private:
+        vector<Parede> paredes; 
+        pair<int,int> tamanho;
+        vector<Espinho> espinhos;
+        pair<int,int> camera;
 
-public:
-    Mapa(pair<int,int> t, pair<int,int> pp, vector<Espinho> e);
+    public:
+        Mapa(pair<int,int> t, pair<int,int> pp, vector<Espinho> e, vector<Parede> par);
 
-    vector<Espinho> getEspinhos();
+        vector<Espinho> getEspinhos();
+        vector<Parede> getParedes();
 
-    void moverX(int ms);
-    void moverY(int ms);
+        void moverX(int ms, int largura);
+        void moverY(int ms, int altura);
+        void atualizarCamera(pair<int,int> centro, int largura, int altura);
 
-    pair<int,int> getTamanho();
-    pair<int,int> getPosicao_protagonista();
-
-    void movePPX(int ms);
-    void movePPY(int ms);
+        pair<int,int> getTamanho();
+        pair<int,int> getCamera();
 };
 
 #endif

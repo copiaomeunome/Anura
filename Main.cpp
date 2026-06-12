@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <algorithm>
 #include <raylib.h>
 
 #include "Espinho/Espinho.h"
@@ -11,43 +12,71 @@
 
 using namespace std;
 
-void andar(Protagonista& p, Mapa& mapa, int largura, int altura){
-    if (IsKeyDown(KEY_D)){
-        if(mapa.getPosicao_protagonista().first<mapa.getTamanho().first){
-            if((mapa.getPosicao_protagonista().first >= (mapa.getTamanho().first - largura/2)) || p.getX()<largura/2){
-                p.andarX(p.getMS());
-                mapa.movePPX(p.getMS());
+int limitar(int valor, int minimo, int maximo){
+    return max(minimo, min(valor, maximo));
+}
+
+bool checa_colisao_parede(Protagonista& p, Mapa mapa){
+    for(Parede par : mapa.getParedes())
+        if (CheckCollisionRecs(
+            {
+                (float)p.getX(),
+                (float)p.getY(),
+                (float)p.getTamanhoX(),
+                (float)p.getTamanhoY()
+            },
+            {
+                (float)par.getX(),
+                (float)par.getY(),
+                (float)par.getTamanhoX(),
+                (float)par.getTamanhoY()
             }
-            else{mapa.moverX(p.getMS());}
+        )){
+            return true;
         }
+    return false;
+}
+
+void andar(Protagonista& p, Mapa& mapa, int largura, int altura){
+    int movimentoX = 0;
+    int movimentoY = 0;
+    int posicaoAnteriorX = p.getX();
+    int posicaoAnteriorY = p.getY();
+
+    if (IsKeyDown(KEY_D)){
+        movimentoX += p.getMS();
     }
     if (IsKeyDown(KEY_A)){
-        if(mapa.getPosicao_protagonista().first>0){
-            if((mapa.getPosicao_protagonista().first <= largura/2) || p.getX()> largura/2){
-                p.andarX(-p.getMS());
-                mapa.movePPX(-p.getMS());
-            }
-            else{mapa.moverX(-p.getMS());}
-        }
+        movimentoX -= p.getMS();
     }
     if (IsKeyDown(KEY_S)){
-        if(mapa.getPosicao_protagonista().second<mapa.getTamanho().second){
-            if((mapa.getPosicao_protagonista().second >= (mapa.getTamanho().second - altura/2)) || p.getY()<altura/2){
-                p.andarY(p.getMS());
-                mapa.movePPY(p.getMS());
-            }
-            else{mapa.moverY(p.getMS());}
-        }
+        movimentoY += p.getMS();
     }
     if (IsKeyDown(KEY_W)){
-        if(mapa.getPosicao_protagonista().second>0){
-            if((mapa.getPosicao_protagonista().second <= altura/2) || p.getY()> altura/2){
-                p.andarY(-p.getMS());
-                mapa.movePPY(-p.getMS());
-            }
-            else{mapa.moverY(-p.getMS());}
+        movimentoY -= p.getMS();
+    }
+
+    if (movimentoX != 0) {
+        p.andarX(movimentoX);
+        int limiteX = mapa.getTamanho().first - p.getTamanhoX();
+        int posicaoCorrigidaX = limitar(p.getX(), 0, limiteX);
+        p.andarX(posicaoCorrigidaX - p.getX());
+        if (checa_colisao_parede(p, mapa)) {
+            p.andarX(posicaoAnteriorX - p.getX());
         }
     }
+
+    if (movimentoY != 0) {
+        p.andarY(movimentoY);
+        int limiteY = mapa.getTamanho().second - p.getTamanhoY();
+        int posicaoCorrigidaY = limitar(p.getY(), 0, limiteY);
+        p.andarY(posicaoCorrigidaY - p.getY());
+        if (checa_colisao_parede(p, mapa)) {
+            p.andarY(posicaoAnteriorY - p.getY());
+        }
+    }
+
+    mapa.atualizarCamera({p.getX() + p.getTamanhoX() / 2, p.getY() + p.getTamanhoY() / 2}, largura, altura);
 }
 
 bool checa_tomar_dano(Protagonista& p, vector<Espinho> espinhos){
@@ -92,7 +121,14 @@ int main() {
         {1,{400,900}, {50,50}},
         {1,{500,700}, {50,50}}
     };
-    Mapa mapa1 = {{3000,3000},{p.getX(),p.getY()}, eMapa1};
+    vector<Parede> pMapa1 = {
+        {{200,500}, {100,50}},
+        {{300,100}, {100,50}},
+        {{400,500}, {100,50}},
+        {{900,900}, {200,50}}
+    };
+    Mapa mapa1 = {{3000,3000},{0,0}, eMapa1, pMapa1};
+    mapa1.atualizarCamera({p.getX() + p.getTamanhoX() / 2, p.getY() + p.getTamanhoY() / 2}, largura, altura);
     int cooldown_dano=0;
     while (!WindowShouldClose()) {
         if(p.getVida()<=0) break;
@@ -112,11 +148,11 @@ int main() {
         
         DrawText(
             TextFormat(
-                "Jogador: x=%d y=%d | Jogador no mundo: x=%d y=%d | Tamanho tela: largura=%d altura=%d",
+                "Jogador: x=%d y=%d | Camera: x=%d y=%d | Tamanho tela: largura=%d altura=%d",
                 p.getX(),
                 p.getY(),
-                mapa1.getPosicao_protagonista().first,
-                mapa1.getPosicao_protagonista().second,
+                mapa1.getCamera().first,
+                mapa1.getCamera().second,
                 largura,
                 altura
             ),20,70,20,DARKGRAY
@@ -129,8 +165,8 @@ int main() {
         };
 
         Rectangle destProtagonista = {
-            (float)p.getX(),
-            (float)p.getY(),
+            (float)(p.getX() - mapa1.getCamera().first),
+            (float)(p.getY() - mapa1.getCamera().second),
             (float)p.getTamanhoX(),
             (float)p.getTamanhoY()
         };
@@ -144,8 +180,45 @@ int main() {
             WHITE
         );
         for(Espinho e : mapa1.getEspinhos())
-            DrawRectangle(e.getX(), e.getY(), e.getTamanhoX(), e.getTamanhoY(), BLACK);
-        EndDrawing();
+            if(CheckCollisionRecs(
+                {
+                    (float)mapa1.getCamera().first,
+                    (float)mapa1.getCamera().second,
+                    (float)largura,
+                    (float)altura
+                },
+                {
+                    (float)e.getX(),
+                    (float)e.getY(),
+                    (float)e.getTamanhoX(),
+                    (float)e.getTamanhoY()
+                }
+            ))
+                DrawRectangle(e.getX() - mapa1.getCamera().first, e.getY() - mapa1.getCamera().second, e.getTamanhoX(), e.getTamanhoY(), BLACK);
+        for(Parede e : mapa1.getParedes())
+            if(CheckCollisionRecs(
+                {
+                    (float)mapa1.getCamera().first,
+                    (float)mapa1.getCamera().second,
+                    (float)largura,
+                    (float)altura
+                },
+                {
+                    (float)e.getX(),
+                    (float)e.getY(),
+                    (float)e.getTamanhoX(),
+                    (float)e.getTamanhoY()
+                }
+            ))
+                DrawRectangle(
+                    e.getX() - mapa1.getCamera().first,
+                    e.getY() - mapa1.getCamera().second,
+                    e.getTamanhoX(),
+                    e.getTamanhoY(),
+                    GREEN
+                );
+        
+            EndDrawing();
     }
     UnloadTexture(texturaProtagonista);
     CloseWindow();

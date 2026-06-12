@@ -1,43 +1,41 @@
 #include "Mapa.h"
+#include <algorithm>
 
-Mapa::Mapa(pair<int,int> t, pair<int,int> pp, vector<Espinho> e) {
+Mapa::Mapa(pair<int,int> t, pair<int,int> c, vector<Espinho> e, vector<Parede> par) {
     tamanho = t;
-    posicao_protagonista = pp;
+    camera = c;
     espinhos = e;
+    paredes = par;
 }
 
 vector<Espinho> Mapa::getEspinhos() {
     return espinhos;
 }
 
-void Mapa::moverX(int ms) {
-    for (Espinho& e : espinhos) {
-        e.andarX(-ms);
-    }
-
-    posicao_protagonista.first += ms;
+vector<Parede> Mapa::getParedes() {
+    return paredes;
 }
 
-void Mapa::moverY(int ms) {
-    for (Espinho& e : espinhos) {
-        e.andarY(-ms);
-    }
+void Mapa::moverX(int ms, int largura) {
+    camera.first = max(0, min(camera.first + ms, tamanho.first - largura));
+}
 
-    posicao_protagonista.second += ms;
+void Mapa::moverY(int ms, int altura) {
+    camera.second = max(0, min(camera.second + ms, tamanho.second - altura));
+}
+
+void Mapa::atualizarCamera(pair<int,int> centro, int largura, int altura) {
+    int limiteX = max(0, tamanho.first - largura);
+    int limiteY = max(0, tamanho.second - altura);
+
+    camera.first = max(0, min(centro.first - largura / 2, limiteX));
+    camera.second = max(0, min(centro.second - altura / 2, limiteY));
 }
 
 pair<int,int> Mapa::getTamanho() {
     return tamanho;
 }
 
-pair<int,int> Mapa::getPosicao_protagonista() {
-    return posicao_protagonista;
-}
-
-void Mapa::movePPX(int ms) {
-    posicao_protagonista.first += ms;
-}
-
-void Mapa::movePPY(int ms) {
-    posicao_protagonista.second += ms;
+pair<int,int> Mapa::getCamera() {
+    return camera;
 }
