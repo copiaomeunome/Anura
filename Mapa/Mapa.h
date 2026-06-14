@@ -3,8 +3,9 @@
 
 #include <vector>
 #include <utility>
-#include "../Espinho/Espinho.h"
+#include "../DamageArea/DamageArea.h"
 #include "../Parede/Parede.h"
+#include "../NPC/NPC.h"
 
 using namespace std;
 
@@ -12,13 +13,14 @@ class Mapa {
     private:
         vector<Parede> paredes; 
         pair<int,int> tamanho;
-        vector<Espinho> espinhos;
+        vector<DamageArea> espinhos;
         pair<int,int> camera;
+        vector<NPC> NPCs;
 
     public:
-        Mapa(pair<int,int> t, pair<int,int> pp, vector<Espinho> e, vector<Parede> par);
+        Mapa(pair<int,int> t, pair<int,int> pp, vector<DamageArea> e, vector<Parede> par, vector<NPC> n);
 
-        vector<Espinho> getEspinhos();
+        vector<DamageArea>& getDamageAreas();
         vector<Parede> getParedes();
 
         void moverX(int ms, int largura);
@@ -27,6 +29,7 @@ class Mapa {
 
         pair<int,int> getTamanho();
         pair<int,int> getCamera();
+        vector<NPC>& getNPCs();
 };
 
 #endif

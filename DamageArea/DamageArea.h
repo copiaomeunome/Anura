@@ -1,17 +1,17 @@
-#ifndef ESPINHO_H
-#define ESPINHO_H
+#ifndef DAMAGEAREA_H
+#define DAMAGEAREA_H
 
 #include <utility>
 using namespace std;
 
-class Espinho {
+class DamageArea {
     private:
         int dano;
         pair<int,int> posicao;
         pair<int,int> tamanho;
 
     public:
-        Espinho(int d, pair<int,int> p, pair<int,int> t);
+        DamageArea(int d, pair<int,int> p, pair<int,int> t);
 
 
         int getX();

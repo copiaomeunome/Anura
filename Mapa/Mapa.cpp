@@ -1,14 +1,15 @@
 #include "Mapa.h"
 #include <algorithm>
 
-Mapa::Mapa(pair<int,int> t, pair<int,int> c, vector<Espinho> e, vector<Parede> par) {
+Mapa::Mapa(pair<int,int> t, pair<int,int> c, vector<DamageArea> e, vector<Parede> par, vector<NPC> n) {
     tamanho = t;
     camera = c;
     espinhos = e;
     paredes = par;
+    NPCs = n;
 }
 
-vector<Espinho> Mapa::getEspinhos() {
+vector<DamageArea>& Mapa::getDamageAreas() {
     return espinhos;
 }
 
@@ -38,4 +39,8 @@ pair<int,int> Mapa::getTamanho() {
 
 pair<int,int> Mapa::getCamera() {
     return camera;
+}
+
+vector<NPC>& Mapa::getNPCs() {
+    return NPCs;
 }

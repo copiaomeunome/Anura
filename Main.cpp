@@ -4,13 +4,21 @@
 #include <algorithm>
 #include <raylib.h>
 
-#include "Espinho/Espinho.h"
+#include "DamageArea/DamageArea.h"
 #include "Projetil/Projetil.h"
 #include "Mapa/Mapa.h"
 #include "Protagonista/Protagonista.h"
+#include "Dialogo/Dialogo.h"
+#include "NPC/NPC.h"
 #include "Main.h"
 
 using namespace std;
+
+
+int current_map = 0;
+vector<Mapa> mapas = {
+    
+};
 
 int limitar(int valor, int minimo, int maximo){
     return max(minimo, min(valor, maximo));
@@ -79,8 +87,8 @@ void andar(Protagonista& p, Mapa& mapa, int largura, int altura){
     mapa.atualizarCamera({p.getX() + p.getTamanhoX() / 2, p.getY() + p.getTamanhoY() / 2}, largura, altura);
 }
 
-bool checa_tomar_dano(Protagonista& p, vector<Espinho> espinhos){
-    for(Espinho e : espinhos)
+bool checa_tomar_dano(Protagonista& p, vector<DamageArea> espinhos){
+    for(DamageArea e : espinhos)
         if (CheckCollisionRecs(
             {
                 (float)p.getX(),
@@ -102,20 +110,21 @@ bool checa_tomar_dano(Protagonista& p, vector<Espinho> espinhos){
 }
 
 int main() {
+    // CONFIGURAÇÕES INICIAIS
     InitWindow(800, 600, "Jogo");
-
     int monitor = GetCurrentMonitor();
     int largura = GetMonitorWidth(monitor);
     int altura = GetMonitorHeight(monitor);
-
     SetWindowSize(largura, altura);
     ToggleFullscreen();
-
     SetTargetFPS(60);
 
+    
+
+    // VARIÁVEIS
     Protagonista p(4,{100,100}, {100,100},10);
     Texture2D texturaProtagonista = LoadTexture("Protagonista/Assets/sapo_sentado.jpg");
-    vector<Espinho> eMapa1 = {
+    vector<DamageArea> eMapa1 = {
         {1,{200,200}, {50,50}},
         {1,{300,1200}, {50,50}},
         {1,{400,900}, {50,50}},
@@ -127,14 +136,37 @@ int main() {
         {{400,500}, {100,50}},
         {{900,900}, {200,50}}
     };
-    Mapa mapa1 = {{3000,3000},{0,0}, eMapa1, pMapa1};
+    vector<string> falas = {"Olá", "Bom dia", "Como está?"};
+    Dialogo dialogo1(falas);
+    vector<Dialogo> dialogos;
+    dialogos.push_back(dialogo1);
+    NPC npc1({1500,1500}, {100,100}, dialogos);
+    NPC npc2({1900,1900}, {100,100}, dialogos);
+    NPC npc3({2100,1500}, {100,100}, dialogos);
+
+    vector<NPC> npcMapa1 = {npc1, npc2, npc3};
+    Mapa mapa1 = {{3000,3000},{0,0}, eMapa1, pMapa1, npcMapa1};
     mapa1.atualizarCamera({p.getX() + p.getTamanhoX() / 2, p.getY() + p.getTamanhoY() / 2}, largura, altura);
     int cooldown_dano=0;
     while (!WindowShouldClose()) {
-        if(p.getVida()<=0) break;
+        string s = "nada";
+        if(p.getVida()<=0) break; // verifica se morreu
+        if(IsKeyDown(KEY_E)){
+            for(NPC& n : mapa1.getNPCs())
+                if(CheckCollisionRecs(
+                    {(float)n.getX(),(float)n.getY(),(float)n.getTamanhoX(),(float)n.getTamanhoY()},
+                    {(float)p.getX(),(float)p.getY(),(float)p.getTamanhoX(),(float)p.getTamanhoY()}
+                )){
+                    n.getNextDialogo().index++;
+                    if(n.getNextDialogo().index >= n.getNextDialogo().getFalas().size())
+                        n.getNextDialogo().index = 0;
+                    s = n.getNextDialogo().getFalas()[n.getNextDialogo().index];
+                }
+        }
+
         andar(p, mapa1, largura, altura);
         if(cooldown_dano==0){
-            if(checa_tomar_dano(p, mapa1.getEspinhos()))cooldown_dano = 60;
+            if(checa_tomar_dano(p, mapa1.getDamageAreas()))cooldown_dano = 60;
         }
         if(cooldown_dano>0)cooldown_dano--;
         BeginDrawing();
@@ -157,6 +189,7 @@ int main() {
                 altura
             ),20,70,20,DARKGRAY
         );
+        DrawText(s.c_str(),20,95,20,DARKGRAY);
         Rectangle sourceProtagonista = { // MODIFICAR AQUI PARA A ANIMAÇÃO -------------------------------------------------------------------------------------
             0,
             0,
@@ -179,7 +212,7 @@ int main() {
             0.0f,
             WHITE
         );
-        for(Espinho e : mapa1.getEspinhos())
+        for(DamageArea e : mapa1.getDamageAreas())
             if(CheckCollisionRecs(
                 {
                     (float)mapa1.getCamera().first,
@@ -194,7 +227,7 @@ int main() {
                     (float)e.getTamanhoY()
                 }
             ))
-                DrawRectangle(e.getX() - mapa1.getCamera().first, e.getY() - mapa1.getCamera().second, e.getTamanhoX(), e.getTamanhoY(), BLACK);
+                DrawRectangle(e.getX() - mapa1.getCamera().first, e.getY() - mapa1.getCamera().second, e.getTamanhoX(), e.getTamanhoY(), RED);
         for(Parede e : mapa1.getParedes())
             if(CheckCollisionRecs(
                 {
@@ -217,7 +250,28 @@ int main() {
                     e.getTamanhoY(),
                     GREEN
                 );
-        
+        for(NPC n : mapa1.getNPCs())
+            if(CheckCollisionRecs(
+                {
+                    (float)mapa1.getCamera().first,
+                    (float)mapa1.getCamera().second,
+                    (float)largura,
+                    (float)altura
+                },
+                {
+                    (float)n.getX(),
+                    (float)n.getY(),
+                    (float)n.getTamanhoX(),
+                    (float)n.getTamanhoY()
+                }
+            ))
+                DrawRectangle(
+                    n.getX() - mapa1.getCamera().first,
+                    n.getY() - mapa1.getCamera().second,
+                    n.getTamanhoX(),
+                    n.getTamanhoY(),
+                    BLACK
+                );
             EndDrawing();
     }
     UnloadTexture(texturaProtagonista);
