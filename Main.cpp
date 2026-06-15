@@ -17,7 +17,7 @@ using namespace std;
 
 int current_map = 0;
 vector<Mapa> mapas = {
-    
+
 };
 
 int limitar(int valor, int minimo, int maximo){
@@ -87,6 +87,92 @@ void andar(Protagonista& p, Mapa& mapa, int largura, int altura){
     mapa.atualizarCamera({p.getX() + p.getTamanhoX() / 2, p.getY() + p.getTamanhoY() / 2}, largura, altura);
 }
 
+void desenha_mapa_e_prota(Mapa mapa1, Protagonista p, int largura, int altura, Texture2D texturaProtagonista){
+    
+    Rectangle sourceProtagonista = { // MODIFICAR AQUI PARA A ANIMAÇÃO -------------------------------------------------------------------------------------
+        0,
+        0,
+        (float)texturaProtagonista.width,
+        (float)texturaProtagonista.height
+    };
+
+    Rectangle destProtagonista = {
+        (float)(p.getX() - mapa1.getCamera().first),
+        (float)(p.getY() - mapa1.getCamera().second),
+        (float)p.getTamanhoX(),
+        (float)p.getTamanhoY()
+    };
+
+    DrawTexturePro(
+        texturaProtagonista,
+        sourceProtagonista,
+            destProtagonista,
+            {0, 0},
+            0.0f,
+            WHITE
+    );
+    for(DamageArea e : mapa1.getDamageAreas())
+        if(CheckCollisionRecs(
+            {
+                (float)mapa1.getCamera().first,
+                (float)mapa1.getCamera().second,
+                (float)largura,
+                (float)altura
+            },
+            {
+                (float)e.getX(),
+                (float)e.getY(),
+                (float)e.getTamanhoX(),
+                (float)e.getTamanhoY()
+            }
+        ))
+    DrawRectangle(e.getX() - mapa1.getCamera().first, e.getY() - mapa1.getCamera().second, e.getTamanhoX(), e.getTamanhoY(), RED);
+    for(Parede e : mapa1.getParedes())
+        if(CheckCollisionRecs(
+            {
+                (float)mapa1.getCamera().first,
+                (float)mapa1.getCamera().second,
+                (float)largura,
+                (float)altura
+            },
+            {
+                (float)e.getX(),
+                (float)e.getY(),
+                (float)e.getTamanhoX(),
+                (float)e.getTamanhoY()
+            }
+        ))
+            DrawRectangle(
+                e.getX() - mapa1.getCamera().first,
+                e.getY() - mapa1.getCamera().second,
+                e.getTamanhoX(),
+                e.getTamanhoY(),
+                GREEN
+            );
+    for(NPC n : mapa1.getNPCs())
+        if(CheckCollisionRecs(
+            {
+                (float)mapa1.getCamera().first,
+                (float)mapa1.getCamera().second,
+                (float)largura,
+                (float)altura
+            },
+            {
+                (float)n.getX(),
+                (float)n.getY(),
+                (float)n.getTamanhoX(),
+                (float)n.getTamanhoY()
+            }
+        ))
+            DrawRectangle(
+                n.getX() - mapa1.getCamera().first,
+                n.getY() - mapa1.getCamera().second,
+                n.getTamanhoX(),
+                n.getTamanhoY(),
+                BLACK
+            );
+}
+
 bool checa_tomar_dano(Protagonista& p, vector<DamageArea> espinhos){
     for(DamageArea e : espinhos)
         if (CheckCollisionRecs(
@@ -108,8 +194,15 @@ bool checa_tomar_dano(Protagonista& p, vector<DamageArea> espinhos){
         }
     return false;
 }
-
+enum StatusJogo {
+    DIALOGO,
+    JOGANDO,
+    CUTSCENE,
+    PAUSADO
+};
 int main() {
+    
+    StatusJogo status = JOGANDO;
     // CONFIGURAÇÕES INICIAIS
     InitWindow(800, 600, "Jogo");
     int monitor = GetCurrentMonitor();
@@ -148,131 +241,110 @@ int main() {
     Mapa mapa1 = {{3000,3000},{0,0}, eMapa1, pMapa1, npcMapa1};
     mapa1.atualizarCamera({p.getX() + p.getTamanhoX() / 2, p.getY() + p.getTamanhoY() / 2}, largura, altura);
     int cooldown_dano=0;
+    int cooldown_interacao = 0;
+    string s = "nada";
     while (!WindowShouldClose()) {
-        string s = "nada";
-        if(p.getVida()<=0) break; // verifica se morreu
-        if(IsKeyDown(KEY_E)){
-            for(NPC& n : mapa1.getNPCs())
-                if(CheckCollisionRecs(
-                    {(float)n.getX(),(float)n.getY(),(float)n.getTamanhoX(),(float)n.getTamanhoY()},
-                    {(float)p.getX(),(float)p.getY(),(float)p.getTamanhoX(),(float)p.getTamanhoY()}
-                )){
-                    n.getNextDialogo().index++;
-                    if(n.getNextDialogo().index >= n.getNextDialogo().getFalas().size())
-                        n.getNextDialogo().index = 0;
-                    s = n.getNextDialogo().getFalas()[n.getNextDialogo().index];
-                }
-        }
-
-        andar(p, mapa1, largura, altura);
-        if(cooldown_dano==0){
-            if(checa_tomar_dano(p, mapa1.getDamageAreas()))cooldown_dano = 60;
-        }
-        if(cooldown_dano>0)cooldown_dano--;
-        BeginDrawing();
-
-        ClearBackground(RAYWHITE);
-        DrawText("Use WASD para mover", 20, 20, 20, DARKGRAY);
-        DrawText(
-            TextFormat("Vida: %d | cooldown_dano: %d", p.getVida(), cooldown_dano),
-            20,45,20,DARKGRAY
-        );
         
-        DrawText(
-            TextFormat(
-                "Jogador: x=%d y=%d | Camera: x=%d y=%d | Tamanho tela: largura=%d altura=%d",
-                p.getX(),
-                p.getY(),
-                mapa1.getCamera().first,
-                mapa1.getCamera().second,
-                largura,
-                altura
-            ),20,70,20,DARKGRAY
-        );
-        DrawText(s.c_str(),20,95,20,DARKGRAY);
-        Rectangle sourceProtagonista = { // MODIFICAR AQUI PARA A ANIMAÇÃO -------------------------------------------------------------------------------------
-            0,
-            0,
-            (float)texturaProtagonista.width,
-            (float)texturaProtagonista.height
-        };
+        if(p.getVida()<=0) break; // verifica se morreu
 
-        Rectangle destProtagonista = {
-            (float)(p.getX() - mapa1.getCamera().first),
-            (float)(p.getY() - mapa1.getCamera().second),
-            (float)p.getTamanhoX(),
-            (float)p.getTamanhoY()
-        };
+        if(status == JOGANDO){
+            
+            
+            if(IsKeyDown(KEY_E)){
+                if(cooldown_interacao<=0){
+                    for(NPC& n : mapa1.getNPCs())
+                        if(CheckCollisionRecs(
+                            {(float)n.getX(),(float)n.getY(),(float)n.getTamanhoX(),(float)n.getTamanhoY()},
+                            {(float)p.getX(),(float)p.getY(),(float)p.getTamanhoX(),(float)p.getTamanhoY()}
+                        )){
+                            n.getNextDialogo().index = 0;
+                            status = DIALOGO;
+                        }
+                }
+            }
 
-        DrawTexturePro(
-            texturaProtagonista,
-            sourceProtagonista,
-            destProtagonista,
-            {0, 0},
-            0.0f,
-            WHITE
-        );
-        for(DamageArea e : mapa1.getDamageAreas())
-            if(CheckCollisionRecs(
-                {
-                    (float)mapa1.getCamera().first,
-                    (float)mapa1.getCamera().second,
-                    (float)largura,
-                    (float)altura
-                },
-                {
-                    (float)e.getX(),
-                    (float)e.getY(),
-                    (float)e.getTamanhoX(),
-                    (float)e.getTamanhoY()
-                }
-            ))
-                DrawRectangle(e.getX() - mapa1.getCamera().first, e.getY() - mapa1.getCamera().second, e.getTamanhoX(), e.getTamanhoY(), RED);
-        for(Parede e : mapa1.getParedes())
-            if(CheckCollisionRecs(
-                {
-                    (float)mapa1.getCamera().first,
-                    (float)mapa1.getCamera().second,
-                    (float)largura,
-                    (float)altura
-                },
-                {
-                    (float)e.getX(),
-                    (float)e.getY(),
-                    (float)e.getTamanhoX(),
-                    (float)e.getTamanhoY()
-                }
-            ))
-                DrawRectangle(
-                    e.getX() - mapa1.getCamera().first,
-                    e.getY() - mapa1.getCamera().second,
-                    e.getTamanhoX(),
-                    e.getTamanhoY(),
-                    GREEN
-                );
-        for(NPC n : mapa1.getNPCs())
-            if(CheckCollisionRecs(
-                {
-                    (float)mapa1.getCamera().first,
-                    (float)mapa1.getCamera().second,
-                    (float)largura,
-                    (float)altura
-                },
-                {
-                    (float)n.getX(),
-                    (float)n.getY(),
-                    (float)n.getTamanhoX(),
-                    (float)n.getTamanhoY()
-                }
-            ))
-                DrawRectangle(
-                    n.getX() - mapa1.getCamera().first,
-                    n.getY() - mapa1.getCamera().second,
-                    n.getTamanhoX(),
-                    n.getTamanhoY(),
-                    BLACK
-                );
+            andar(p, mapa1, largura, altura);
+            if(cooldown_dano==0){
+                if(checa_tomar_dano(p, mapa1.getDamageAreas()))cooldown_dano = 60;
+            }
+            if(cooldown_dano>0)cooldown_dano--;
+            if(cooldown_interacao>0) cooldown_interacao--;
+
+            BeginDrawing();
+
+            ClearBackground(RAYWHITE);
+            DrawText("Use WASD para mover", 20, 20, 20, DARKGRAY);
+            DrawText(
+                TextFormat("Vida: %d | cooldown_dano: %d | cooldown_interacao: %d", p.getVida(), cooldown_dano, cooldown_interacao),
+                20,45,20,DARKGRAY
+            );
+            
+            DrawText(
+                TextFormat(
+                    "Jogador: x=%d y=%d | Camera: x=%d y=%d | Tamanho tela: largura=%d altura=%d",
+                    p.getX(),
+                    p.getY(),
+                    mapa1.getCamera().first,
+                    mapa1.getCamera().second,
+                    largura,
+                    altura
+                ),20,70,20,DARKGRAY
+            );
+            DrawText(s.c_str(),20,95,20,DARKGRAY);
+
+            desenha_mapa_e_prota(mapa1,p,largura,altura, texturaProtagonista);
+
             EndDrawing();
+
+
+        }
+        if(status == DIALOGO){
+            if(IsKeyDown(KEY_E)){
+                if(cooldown_interacao<=0){
+                    for(NPC& n : mapa1.getNPCs())
+                        if(CheckCollisionRecs(
+                            {(float)n.getX(),(float)n.getY(),(float)n.getTamanhoX(),(float)n.getTamanhoY()},
+                            {(float)p.getX(),(float)p.getY(),(float)p.getTamanhoX(),(float)p.getTamanhoY()}
+                        )){
+                            
+                            if(n.getNextDialogo().index >= n.getNextDialogo().getFalas().size()){
+                                n.getNextDialogo().index = 0;
+                                cooldown_interacao =30;
+                                status = JOGANDO;
+                            }
+                            s = n.getNextDialogo().getFalas()[n.getNextDialogo().index];
+                            n.getNextDialogo().index++;
+                        }
+                    cooldown_interacao = 30;
+                }
+            }
+            if(cooldown_interacao>0) cooldown_interacao--;
+            BeginDrawing();
+
+            ClearBackground(RAYWHITE);
+            DrawText("Use WASD para mover", 20, 20, 20, DARKGRAY);
+            DrawText(
+                TextFormat("Vida: %d | cooldown_dano: %d | cooldown_interacao: %d", p.getVida(), cooldown_dano, cooldown_interacao),
+                20,45,20,DARKGRAY
+            );
+            
+            DrawText(
+                TextFormat(
+                    "Jogador: x=%d y=%d | Camera: x=%d y=%d | Tamanho tela: largura=%d altura=%d",
+                    p.getX(),
+                    p.getY(),
+                    mapa1.getCamera().first,
+                    mapa1.getCamera().second,
+                    largura,
+                    altura
+                ),20,70,20,DARKGRAY
+            );
+            
+            desenha_mapa_e_prota(mapa1,p,largura,altura, texturaProtagonista);
+            DrawRectangle(100, altura-400, 2*largura/3, 100, BLUE);
+            DrawText(s.c_str(),200,altura-350,20,BLACK);
+            EndDrawing();
+        }
     }
     UnloadTexture(texturaProtagonista);
     CloseWindow();

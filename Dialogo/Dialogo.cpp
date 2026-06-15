@@ -4,7 +4,7 @@
 
 Dialogo::Dialogo(vector<string> f){
     falas = f;
-    index = -1;
+    index = 0;
     esta_ativo=false;
 }
 
