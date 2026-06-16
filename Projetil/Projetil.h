@@ -3,7 +3,6 @@
 
 #include <vector>
 #include <utility>
-#include "../Protagonista/Protagonista.h"
 #include "../Parede/Parede.h"
 
 using namespace std;
@@ -14,8 +13,8 @@ class Projetil {
         pair<int,int> tamanho;
         pair<float,float> move_speed;
         int dano;
-        bool ehInimigo;
     public:
+        bool ehInimigo;
         int ricochetes;
         Projetil(pair<float,float> p, pair<int,int> t, pair<float,float> ms, int d, int r, bool ei);
 

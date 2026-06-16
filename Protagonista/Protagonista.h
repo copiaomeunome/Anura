@@ -3,6 +3,7 @@
 
 #include <utility>
 #include "../DamageArea/DamageArea.h"
+#include "../Projetil/Projetil.h"
 using namespace std;
 
 class Protagonista {
@@ -28,6 +29,7 @@ class Protagonista {
         int getMS();
         int getVida();
         DamageArea bater_melee(int x, int y);
+        Projetil bater_Ranged(int x, int y);
 };
 
 #endif

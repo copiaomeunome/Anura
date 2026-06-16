@@ -48,11 +48,10 @@ bool checa_colisao_parede(Protagonista& p, Mapa mapa){
         }
     return false;
 }
-
-bool checa_colisao_projetil(Protagonista& p, Mapa mapa, Projetil& bala){
+bool checa_colisao_projetil(Protagonista& p, Mapa mapa, Projetil& bala, vector<unique_ptr<Inimigo>>& inimigos){
+    bool resp = false;
     if(bala.getX()<0 || bala.getY()<0 || bala.getX()>mapa.getTamanho().first || bala.getY()>mapa.getTamanho().second) return true;
-    for(Parede par : mapa.getParedes())
-        if (CheckCollisionRecs(
+    for(Parede par : mapa.getParedes())        if (CheckCollisionRecs(
             {
                 (float)bala.getX(),
                 (float)bala.getY(),
@@ -68,27 +67,51 @@ bool checa_colisao_projetil(Protagonista& p, Mapa mapa, Projetil& bala){
         )){
             bala.ricochetear(par);
             if(bala.ricochetes==0){
-                return true;
+                resp = true;
             }
         }
-    if(CheckCollisionRecs(
-        {
-            (float)bala.getX(),
-            (float)bala.getY(),
-            (float)bala.getTamanhoX(),
-            (float)bala.getTamanhoY()
-        },
-        {
-            (float)p.getX(),
-            (float)p.getY(),
-            (float)p.getTamanhoX(),
-            (float)p.getTamanhoY()
+    if(bala.ehInimigo){
+        if(CheckCollisionRecs(
+            {
+                (float)bala.getX(),
+                (float)bala.getY(),
+                (float)bala.getTamanhoX(),
+                (float)bala.getTamanhoY()
+            },
+            {
+                (float)p.getX(),
+                (float)p.getY(),
+                (float)p.getTamanhoX(),
+                (float)p.getTamanhoY()
+            }
+        )){
+            p.alteraVida(-bala.getDano());
+            resp = true;
         }
-    )){
-        p.alteraVida(-bala.getDano());
-        return true;
     }
-    return false;
+    else{
+        for(unique_ptr<Inimigo>& i : inimigos){
+            if(CheckCollisionRecs(
+                {
+                    (float)bala.getX(),
+                    (float)bala.getY(),
+                    (float)bala.getTamanhoX(),
+                    (float)bala.getTamanhoY()
+                },
+                {
+                    (float)i->getX(),
+                    (float)i->getY(),
+                    (float)i->getTamanhoX(),
+                    (float)i->getTamanhoY()
+                }
+            )){
+                i->alteraVida(-bala.getDano());
+                resp = true;
+            }
+        }
+    }
+
+    return resp;
 }
 
 void andar(Protagonista& p, Mapa& mapa, int largura, int altura){
@@ -219,7 +242,7 @@ void desenha_mapa_e_prota(Mapa mapa1, Protagonista p, int largura, int altura, T
             );
 }
 
-vector<int> checa_dar_dano(vector<unique_ptr<Inimigo>>& inimigos, DamageArea dano){
+vector<int> checa_dar_dano_melee(vector<unique_ptr<Inimigo>>& inimigos, DamageArea dano){
     vector<int> resp;
     for(int indice = 0; indice < inimigos.size(); indice++)
         if (CheckCollisionRecs(
@@ -323,7 +346,6 @@ int main() {
         if(p.getVida()<=0){
             break;
         } // verifica se morreu
-
         if(status == JOGANDO){
             if(IsKeyDown(KEY_E)){
                 if(cooldown_interacao<=0){
@@ -338,10 +360,16 @@ int main() {
                 }
             }
 
+            for (int i = (int)inimigos.size() - 1; i >= 0; i--) {
+                if (inimigos[i]->getVida() <= 0) {
+                    inimigos.erase(inimigos.begin() + i);
+                }
+            }
+
             if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)){
                 Vector2 mousePos = GetMousePosition();
                 DamageArea hitProta = p.bater_melee(mousePos.x + mapa1.getCamera().first, mousePos.y + mapa1.getCamera().second);
-                vector<int> resp = checa_dar_dano(
+                vector<int> resp = checa_dar_dano_melee(
                     inimigos,
                     hitProta
                 );
@@ -349,9 +377,16 @@ int main() {
                 for(int indice : resp) inimigos.erase(inimigos.begin() + indice);
                 mapa1.addDamageAreas(hitProta);
             }
+
+            if(IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)){
+                Vector2 mousePos = GetMousePosition();
+                Projetil hitProta = p.bater_Ranged(mousePos.x + mapa1.getCamera().first, mousePos.y + mapa1.getCamera().second);
+                projeteis.push_back(hitProta);
+            }
+
             for (size_t i = 0; i < projeteis.size(); ) {
                 projeteis[i].mover();
-                if (checa_colisao_projetil(p, mapa1, projeteis[i])) {
+                if (checa_colisao_projetil(p, mapa1, projeteis[i], inimigos)) {
                     projeteis.erase(projeteis.begin() + i);
                 } else {
                     i++;

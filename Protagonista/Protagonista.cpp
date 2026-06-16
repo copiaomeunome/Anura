@@ -1,5 +1,6 @@
 #include "Protagonista.h"
 #include "../DamageArea/DamageArea.h"
+#include "../Projetil/Projetil.h"
 #include <cmath>
 Protagonista::Protagonista(int v, pair<int,int> p, pair<int,int> t, int ms, int rm) {
     posicao = p;
@@ -68,4 +69,18 @@ DamageArea Protagonista::bater_melee(int x, int y){
 
     DamageArea da(1,{posx,posy},{range_melee, range_melee},true,true);
     return da;
+}
+
+Projetil Protagonista::bater_Ranged(int x, int y){
+    pair<int,int> centro = {(posicao.first+tamanho.first/2),(posicao.second+tamanho.second/2)};
+    pair<int,int> centroP = {x,y};
+
+    float distancia_player = sqrt(pow((centro.first-centroP.first),2) + pow((centro.second-centroP.second),2));
+    pair<float,float> ms = {
+        (move_speed*((float)centro.first-(float)centroP.first))/distancia_player,
+        (move_speed*((float)centro.second-(float)centroP.second))/distancia_player
+    };
+
+    Projetil pr({{posicao.first+tamanho.first/2,posicao.second+tamanho.second/2},{40,40},ms,1,1,false});
+    return pr;
 }
