@@ -3,7 +3,9 @@
 
 #include <vector>
 #include <utility>
+#include <optional>
 #include "../Protagonista/Protagonista.h"
+#include "../projetil/Projetil.h"
 
 using namespace std;
 
@@ -16,6 +18,7 @@ class Inimigo {
         int dano;
         int range;
         int vida;
+        int cd_atack;
 
     public:
         Inimigo(pair<int,int> p, pair<int,int> t, int ms, bool eR, int d, int r, int v);
@@ -31,7 +34,7 @@ class Inimigo {
         int getDano();
         int getVida();
         
-        Projetil mover_ranged(Protagonista p);
+        optional<Projetil> mover_ranged(Protagonista p);
         void alteraVida(int d);
 };
 

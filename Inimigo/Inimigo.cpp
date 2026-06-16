@@ -4,6 +4,7 @@
 #include <vector>
 #include <cmath>
 #include <iostream>
+#include <optional>
 
 using namespace std;
 
@@ -15,6 +16,7 @@ Inimigo::Inimigo(pair<int,int> p, pair<int,int> t, int ms, bool eR, int d, int r
     dano = d;
     range = r;
     vida = v;
+    cd_atack = 0;
 }
 
 int Inimigo::getX() {
@@ -49,20 +51,30 @@ int Inimigo::getVida(){
     return vida;
 }
         
-Projetil Inimigo::mover_ranged(Protagonista p){
+optional<Projetil> Inimigo::mover_ranged(Protagonista p){
     
-    pair<int,int> centro = {(posicao.first+tamanho.first)/2,(posicao.second+tamanho.second)/2};
-    pair<int,int> centroP = {(p.getX()+p.getTamanhoX())/2,(p.getY()+p.getTamanhoY())/2};
-    int distancia_player = sqrt(pow((centro.first-centroP.first),2) + pow((centro.second-centroP.second),2));
+    pair<int,int> centro = {(posicao.first+tamanho.first/2),(posicao.second+tamanho.second/2)};
+    pair<int,int> centroP = {(p.getX()+p.getTamanhoX()/2),(p.getY()+p.getTamanhoY()/2)};
+    
+    float distancia_player = sqrt(pow((centro.first-centroP.first),2) + pow((centro.second-centroP.second),2));
+    pair<float,float> ms = {(move_speed*((float)centro.first-(float)centroP.first))/distancia_player,(move_speed*((float)centro.second-(float)centroP.second))/distancia_player};
+    
     if(distancia_player >= range){
-        pair<int,int> ms = {(move_speed*(centro.first-centroP.first))/distancia_player,(move_speed*(centro.second-centroP.second))/distancia_player};
         posicao.first-=ms.first;
         posicao.second-=ms.second;
-        Projetil pr({posicao,{40,40},ms,1,1,true});
+        return nullopt;
+    }
+    Projetil pr({{posicao.first+tamanho.first/2,posicao.second+tamanho.second/2},{40,40},ms,1,1,true});
+    if(cd_atack<=0){
+        cd_atack = 60;
         return pr;
     }
-    Projetil pr();
-    return pr;
+    else{
+        cd_atack--;
+        return nullopt;
+    }
+    
+    
 }
 
 void Inimigo::alteraVida(int d){

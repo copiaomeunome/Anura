@@ -7,7 +7,7 @@
 
 using namespace std;
 
-Projetil::Projetil(pair<int,int> p, pair<int,int> t, pair<int,int> ms, int d, int r, bool ei) {
+Projetil::Projetil(pair<float,float> p, pair<int,int> t, pair<float,float> ms, int d, int r, bool ei) {
     posicao = p;
     tamanho = t;
     move_speed = ms;
@@ -32,7 +32,7 @@ int Projetil::getTamanhoY() {
     return tamanho.second;
 }
         
-pair<int,int> Projetil::getMS(){
+pair<float,float> Projetil::getMS(){
     return move_speed;
 }
 
@@ -63,6 +63,7 @@ void Projetil::ricochetear(Parede par) {
     if (projBottomPrev <= wallTop || projTopPrev >= wallBottom) {
         move_speed.second *= -1;
     }
+    ricochetes--;
 }
         
 void Projetil::mover(){

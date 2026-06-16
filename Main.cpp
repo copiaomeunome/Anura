@@ -47,6 +47,7 @@ bool checa_colisao_parede(Protagonista& p, Mapa mapa){
 }
 
 bool checa_colisao_projetil(Protagonista& p, Mapa mapa, Projetil& bala){
+    if(bala.getX()<0 || bala.getY()<0 || bala.getX()>mapa.getTamanho().first || bala.getY()>mapa.getTamanho().second) return true;
     for(Parede par : mapa.getParedes())
         if (CheckCollisionRecs(
             {
@@ -215,8 +216,9 @@ void desenha_mapa_e_prota(Mapa mapa1, Protagonista p, int largura, int altura, T
             );
 }
 
-bool checa_dar_dano(vector<Inimigo>& inimigos, DamageArea dano){
-    for(Inimigo& e : inimigos)
+vector<int> checa_dar_dano(vector<Inimigo>& inimigos, DamageArea dano){
+    vector<int> resp;
+    for(int indice = 0; indice < inimigos.size(); indice++)
         if (CheckCollisionRecs(
             {
                 (float)dano.getX(),
@@ -225,16 +227,16 @@ bool checa_dar_dano(vector<Inimigo>& inimigos, DamageArea dano){
                 (float)dano.getTamanhoY()
             },
             {
-                (float)e.getX(),
-                (float)e.getY(),
-                (float)e.getTamanhoX(),
-                (float)e.getTamanhoY()
+                (float)inimigos[indice].getX(),
+                (float)inimigos[indice].getY(),
+                (float)inimigos[indice].getTamanhoX(),
+                (float)inimigos[indice].getTamanhoY()
             }
         )){
-            e.alteraVida(dano.getDano()*-1);
-            return true;
+            inimigos[indice].alteraVida(dano.getDano()*-1);
+            if(inimigos[indice].getVida()<=0) resp.push_back(indice);
         }
-    return false;
+    return resp;
 }
 
 bool checa_tomar_dano(Protagonista& p, vector<DamageArea> areas_de_dano){
@@ -282,7 +284,7 @@ int main() {
     Protagonista p(4,{100,100}, {100,100},10, 100);
     Texture2D texturaProtagonista = LoadTexture("Protagonista/Assets/sapo_sentado.jpg");
     vector<Projetil> projeteis;
-    Inimigo inimigo({600,100}, {100,100}, 3, true, 1, 5, 3);
+    Inimigo inimigo({600,100}, {100,100}, 3, true, 1, 700, 3);
     vector<Inimigo> inimigos;
     inimigos.push_back(inimigo);
     vector<DamageArea> eMapa1 = {
@@ -313,7 +315,9 @@ int main() {
     string s = "nada";
     while (!WindowShouldClose()) {
         
-        if(p.getVida()<=0) break; // verifica se morreu
+        if(p.getVida()<=0){
+            break;
+        } // verifica se morreu
 
         if(status == JOGANDO){
             
@@ -332,17 +336,18 @@ int main() {
             }
 
             if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)){
-                checa_dar_dano(inimigos,p.bater_melee());
+                vector<int> resp = checa_dar_dano(inimigos,p.bater_melee());
+                sort(resp.rbegin(), resp.rend());
+                for(int indice : resp) inimigos.erase(inimigos.begin() + indice);
             }
-            int iPr=0;
-            for(Projetil& pr : projeteis){
-                pr.mover();
-                if(checa_colisao_projetil(p,mapa1,pr)){
-                    projeteis.erase(projeteis.begin() + iPr);
+            for (size_t i = 0; i < projeteis.size(); ) {
+                projeteis[i].mover();
+                if (checa_colisao_projetil(p, mapa1, projeteis[i])) {
+                    projeteis.erase(projeteis.begin() + i);
+                } else {
+                    i++;
                 }
-                iPr++;
             }
-
             andar(p, mapa1, largura, altura);
             
             if(cooldown_dano==0){
@@ -350,7 +355,12 @@ int main() {
             }
             if(cooldown_dano>0)cooldown_dano--;
             if(cooldown_interacao>0) cooldown_interacao--;
-            for(Inimigo& i : inimigos) i.mover(p);
+            for(Inimigo& i : inimigos){
+                auto projetil = i.mover_ranged(p);
+                if(projetil.has_value()){
+                    projeteis.push_back(*projetil);
+                }
+            }
             BeginDrawing();
 
             ClearBackground(RAYWHITE);
@@ -373,7 +383,7 @@ int main() {
             );
             DrawText(s.c_str(),20,95,20,DARKGRAY);
             DrawText(
-                TextFormat("Vida Inimigo: %d",inimigos[0].getVida()),
+                TextFormat("Vida Inimigo: %d",inimigos.size()==0?0:inimigos[0].getVida()),
                 20,120,20,DARKGRAY
             );
 
@@ -443,6 +453,24 @@ int main() {
             );
             
             desenha_mapa_e_prota(mapa1,p,largura,altura, texturaProtagonista);
+            for(Inimigo i : inimigos){
+                DrawRectangle(
+                    i.getX() - mapa1.getCamera().first,
+                    i.getY() - mapa1.getCamera().second,
+                    i.getTamanhoX(),
+                    i.getTamanhoY(),
+                    BLACK
+                );
+            }
+            for(Projetil pr : projeteis){
+                DrawRectangle(
+                    pr.getX() - mapa1.getCamera().first,
+                    pr.getY() - mapa1.getCamera().second,
+                    pr.getTamanhoX(),
+                    pr.getTamanhoY(),
+                    BLACK
+                );
+            }
             DrawRectangle(100, altura-400, 2*largura/3, 100, BLUE);
             DrawText(s.c_str(),200,altura-350,20,BLACK);
             EndDrawing();
