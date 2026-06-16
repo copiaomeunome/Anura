@@ -1,5 +1,6 @@
 #include "Inimigo.h"
 #include "../Protagonista/Protagonista.h"
+#include "../Projetil/Projetil.h"
 #include <vector>
 #include <cmath>
 #include <iostream>
@@ -48,21 +49,22 @@ int Inimigo::getVida(){
     return vida;
 }
         
-void Inimigo::mover(Protagonista p){
+Projetil Inimigo::mover_ranged(Protagonista p){
+    
     pair<int,int> centro = {(posicao.first+tamanho.first)/2,(posicao.second+tamanho.second)/2};
     pair<int,int> centroP = {(p.getX()+p.getTamanhoX())/2,(p.getY()+p.getTamanhoY())/2};
     int distancia_player = sqrt(pow((centro.first-centroP.first),2) + pow((centro.second-centroP.second),2));
-
     if(distancia_player >= range){
-        posicao.first-=(move_speed*(centro.first-centroP.first))/distancia_player;
-        posicao.second-=(move_speed*(centro.second-centroP.second))/distancia_player;
+        pair<int,int> ms = {(move_speed*(centro.first-centroP.first))/distancia_player,(move_speed*(centro.second-centroP.second))/distancia_player};
+        posicao.first-=ms.first;
+        posicao.second-=ms.second;
+        Projetil pr({posicao,{40,40},ms,1,1,true});
+        return pr;
     }
+    Projetil pr();
+    return pr;
 }
 
 void Inimigo::alteraVida(int d){
     vida += d;
-}
-
-void Inimigo::bater(){
-
 }

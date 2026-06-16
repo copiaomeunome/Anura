@@ -23,8 +23,6 @@ class Parede {
 
         int getX();
         int getY();
-        void andarX(int quantidade);
-        void andarY(int quantidade);
 };
 
 #endif

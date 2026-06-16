@@ -5,9 +5,6 @@ Parede::Parede(pair<int,int> p, pair<int,int> t) {
     tamanho = t;
 }
 
-void Parede::andarX(int quantidade) {posicao.first += quantidade;}
-
-void Parede::andarY(int quantidade) {posicao.second += quantidade;}
 
 int Parede::getX() {return posicao.first;}
 

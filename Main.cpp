@@ -46,6 +46,47 @@ bool checa_colisao_parede(Protagonista& p, Mapa mapa){
     return false;
 }
 
+bool checa_colisao_projetil(Protagonista& p, Mapa mapa, Projetil& bala){
+    for(Parede par : mapa.getParedes())
+        if (CheckCollisionRecs(
+            {
+                (float)bala.getX(),
+                (float)bala.getY(),
+                (float)bala.getTamanhoX(),
+                (float)bala.getTamanhoY()
+            },
+            {
+                (float)par.getX(),
+                (float)par.getY(),
+                (float)par.getTamanhoX(),
+                (float)par.getTamanhoY()
+            }
+        )){
+            bala.ricochetear(par);
+            if(bala.ricochetes==0){
+                return true;
+            }
+        }
+    if(CheckCollisionRecs(
+        {
+            (float)bala.getX(),
+            (float)bala.getY(),
+            (float)bala.getTamanhoX(),
+            (float)bala.getTamanhoY()
+        },
+        {
+            (float)p.getX(),
+            (float)p.getY(),
+            (float)p.getTamanhoX(),
+            (float)p.getTamanhoY()
+        }
+    )){
+        p.alteraVida(-bala.getDano());
+        return true;
+    }
+    return false;
+}
+
 void andar(Protagonista& p, Mapa& mapa, int largura, int altura){
     int movimentoX = 0;
     int movimentoY = 0;
@@ -240,6 +281,7 @@ int main() {
     // VARIÁVEIS
     Protagonista p(4,{100,100}, {100,100},10, 100);
     Texture2D texturaProtagonista = LoadTexture("Protagonista/Assets/sapo_sentado.jpg");
+    vector<Projetil> projeteis;
     Inimigo inimigo({600,100}, {100,100}, 3, true, 1, 5, 3);
     vector<Inimigo> inimigos;
     inimigos.push_back(inimigo);
@@ -292,8 +334,17 @@ int main() {
             if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)){
                 checa_dar_dano(inimigos,p.bater_melee());
             }
+            int iPr=0;
+            for(Projetil& pr : projeteis){
+                pr.mover();
+                if(checa_colisao_projetil(p,mapa1,pr)){
+                    projeteis.erase(projeteis.begin() + iPr);
+                }
+                iPr++;
+            }
 
             andar(p, mapa1, largura, altura);
+            
             if(cooldown_dano==0){
                 if(checa_tomar_dano(p, mapa1.getDamageAreas()))cooldown_dano = 60;
             }
@@ -336,7 +387,15 @@ int main() {
                     BLACK
                 );
             }
-            
+            for(Projetil pr : projeteis){
+                DrawRectangle(
+                    pr.getX() - mapa1.getCamera().first,
+                    pr.getY() - mapa1.getCamera().second,
+                    pr.getTamanhoX(),
+                    pr.getTamanhoY(),
+                    BLACK
+                );
+            }
             EndDrawing();
 
 

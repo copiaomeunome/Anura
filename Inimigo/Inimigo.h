@@ -31,8 +31,7 @@ class Inimigo {
         int getDano();
         int getVida();
         
-        void mover(Protagonista p);
-        void bater();
+        Projetil mover_ranged(Protagonista p);
         void alteraVida(int d);
 };
 
