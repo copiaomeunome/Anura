@@ -1,9 +1,10 @@
 #include "DamageArea.h"
 
-DamageArea::DamageArea(int d, pair<int,int> p, pair<int,int> t) {
+DamageArea::DamageArea(int d, pair<int,int> p, pair<int,int> t, bool ea) {
     dano = d;
     posicao = p;
     tamanho = t;
+    ehAliada = ea;
 }
 
 

@@ -15,9 +15,10 @@ class Inimigo {
         bool eRanged;
         int dano;
         int range;
+        int vida;
 
     public:
-        Inimigo(pair<int,int> p, pair<int,int> t, int ms, bool eR, int d, int r);
+        Inimigo(pair<int,int> p, pair<int,int> t, int ms, bool eR, int d, int r, int v);
 
         int getX();
         int getY();
@@ -28,9 +29,11 @@ class Inimigo {
         int getMS();
         bool getERanged();
         int getDano();
+        int getVida();
         
         void mover(Protagonista p);
         void bater();
+        void alteraVida(int d);
 };
 
 #endif

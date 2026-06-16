@@ -8,6 +8,7 @@
 #include "Projetil/Projetil.h"
 #include "Mapa/Mapa.h"
 #include "Protagonista/Protagonista.h"
+#include "Inimigo/Inimigo.h"
 #include "Dialogo/Dialogo.h"
 #include "NPC/NPC.h"
 #include "Main.h"
@@ -173,8 +174,30 @@ void desenha_mapa_e_prota(Mapa mapa1, Protagonista p, int largura, int altura, T
             );
 }
 
-bool checa_tomar_dano(Protagonista& p, vector<DamageArea> espinhos){
-    for(DamageArea e : espinhos)
+bool checa_dar_dano(vector<Inimigo>& inimigos, DamageArea dano){
+    for(Inimigo& e : inimigos)
+        if (CheckCollisionRecs(
+            {
+                (float)dano.getX(),
+                (float)dano.getY(),
+                (float)dano.getTamanhoX(),
+                (float)dano.getTamanhoY()
+            },
+            {
+                (float)e.getX(),
+                (float)e.getY(),
+                (float)e.getTamanhoX(),
+                (float)e.getTamanhoY()
+            }
+        )){
+            e.alteraVida(dano.getDano()*-1);
+            return true;
+        }
+    return false;
+}
+
+bool checa_tomar_dano(Protagonista& p, vector<DamageArea> areas_de_dano){
+    for(DamageArea e : areas_de_dano)
         if (CheckCollisionRecs(
             {
                 (float)p.getX(),
@@ -215,13 +238,16 @@ int main() {
     
 
     // VARIÁVEIS
-    Protagonista p(4,{100,100}, {100,100},10);
+    Protagonista p(4,{100,100}, {100,100},10, 100);
     Texture2D texturaProtagonista = LoadTexture("Protagonista/Assets/sapo_sentado.jpg");
+    Inimigo inimigo({600,100}, {100,100}, 3, true, 1, 5, 3);
+    vector<Inimigo> inimigos;
+    inimigos.push_back(inimigo);
     vector<DamageArea> eMapa1 = {
-        {1,{200,200}, {50,50}},
-        {1,{300,1200}, {50,50}},
-        {1,{400,900}, {50,50}},
-        {1,{500,700}, {50,50}}
+        {1,{200,200}, {50,50}, false},
+        {1,{300,1200}, {50,50}, false},
+        {1,{400,900}, {50,50}, false},
+        {1,{500,700}, {50,50}, false}
     };
     vector<Parede> pMapa1 = {
         {{200,500}, {100,50}},
@@ -263,13 +289,17 @@ int main() {
                 }
             }
 
+            if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)){
+                checa_dar_dano(inimigos,p.bater_melee());
+            }
+
             andar(p, mapa1, largura, altura);
             if(cooldown_dano==0){
                 if(checa_tomar_dano(p, mapa1.getDamageAreas()))cooldown_dano = 60;
             }
             if(cooldown_dano>0)cooldown_dano--;
             if(cooldown_interacao>0) cooldown_interacao--;
-
+            for(Inimigo& i : inimigos) i.mover(p);
             BeginDrawing();
 
             ClearBackground(RAYWHITE);
@@ -291,9 +321,22 @@ int main() {
                 ),20,70,20,DARKGRAY
             );
             DrawText(s.c_str(),20,95,20,DARKGRAY);
+            DrawText(
+                TextFormat("Vida Inimigo: %d",inimigos[0].getVida()),
+                20,120,20,DARKGRAY
+            );
 
             desenha_mapa_e_prota(mapa1,p,largura,altura, texturaProtagonista);
-
+            for(Inimigo i : inimigos){
+                DrawRectangle(
+                    i.getX() - mapa1.getCamera().first,
+                    i.getY() - mapa1.getCamera().second,
+                    i.getTamanhoX(),
+                    i.getTamanhoY(),
+                    BLACK
+                );
+            }
+            
             EndDrawing();
 
 

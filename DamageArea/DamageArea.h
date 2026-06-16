@@ -11,7 +11,8 @@ class DamageArea {
         pair<int,int> tamanho;
 
     public:
-        DamageArea(int d, pair<int,int> p, pair<int,int> t);
+        bool ehAliada;
+        DamageArea(int d, pair<int,int> p, pair<int,int> t, bool ea);
 
 
         int getX();

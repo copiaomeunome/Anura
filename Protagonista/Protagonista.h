@@ -2,6 +2,7 @@
 #define PROTAGONISTA_H
 
 #include <utility>
+#include "../DamageArea/DamageArea.h"
 using namespace std;
 
 class Protagonista {
@@ -10,9 +11,10 @@ class Protagonista {
         pair<int,int> posicao;
         pair<int,int> tamanho;
         int move_speed;
+        int range_melee;
 
     public:
-        Protagonista(int v, pair<int,int> p, pair<int,int> t, int ms);
+        Protagonista(int v, pair<int,int> p, pair<int,int> t, int ms, int rm);
 
         int getX();
         int getY();
@@ -25,6 +27,7 @@ class Protagonista {
         int getTamanhoY();
         int getMS();
         int getVida();
+        DamageArea bater_melee();
 };
 
 #endif

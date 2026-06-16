@@ -1,10 +1,11 @@
 #include "Protagonista.h"
-
-Protagonista::Protagonista(int v, pair<int,int> p, pair<int,int> t, int ms) {
+#include "../DamageArea/DamageArea.h"
+Protagonista::Protagonista(int v, pair<int,int> p, pair<int,int> t, int ms, int rm) {
     posicao = p;
     vida = v;
     tamanho = t;
     move_speed = ms;
+    range_melee = rm;
 }
 
 int Protagonista::getX() {
@@ -41,4 +42,9 @@ int Protagonista::getMS() {
 
 int Protagonista::getVida() {
     return vida;
+}
+
+DamageArea Protagonista::bater_melee(){
+    DamageArea da(1,posicao,tamanho,true);
+    return da;
 }
