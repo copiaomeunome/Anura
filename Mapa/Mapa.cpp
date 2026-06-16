@@ -44,3 +44,11 @@ pair<int,int> Mapa::getCamera() {
 vector<NPC>& Mapa::getNPCs() {
     return NPCs;
 }
+
+void Mapa::addDamageAreas(DamageArea da){
+    espinhos.push_back(da);
+}
+
+void Mapa::removeDamageArea(int i){
+    espinhos.erase(espinhos.begin() + i);
+}

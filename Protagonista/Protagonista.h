@@ -27,7 +27,7 @@ class Protagonista {
         int getTamanhoY();
         int getMS();
         int getVida();
-        DamageArea bater_melee();
+        DamageArea bater_melee(int x, int y);
 };
 
 #endif

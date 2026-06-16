@@ -1,3 +1,3 @@
 para compilar:
     baixe raylib c++ da internet
-    g++ Main.cpp Mapa/Mapa.cpp NPC/NPC.cpp Dialogo/Dialogo.cpp DamageArea/DamageArea.cpp Protagonista/Protagonista.cpp Projetil/Projetil.cpp Parede/Parede.cpp Inimigo/Inimigo.cpp -o main.exe -lraylib -lopengl32 -lgdi32 -lwinmm
+    g++ Main.cpp Mapa/Mapa.cpp NPC/NPC.cpp Dialogo/Dialogo.cpp DamageArea/DamageArea.cpp Protagonista/Protagonista.cpp Projetil/Projetil.cpp Parede/Parede.cpp Inimigo/Inimigo.cpp Inimigo/Inimigo_ranged/inimigo_ranged.cpp Inimigo/Inimigo_melee/Inimigo_melee.cpp -o main.exe -lraylib -lopengl32 -lgdi32 -lwinmm

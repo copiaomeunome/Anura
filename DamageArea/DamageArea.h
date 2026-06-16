@@ -12,7 +12,8 @@ class DamageArea {
 
     public:
         bool ehAliada;
-        DamageArea(int d, pair<int,int> p, pair<int,int> t, bool ea);
+        bool temporaria;
+        DamageArea(int d, pair<int,int> p, pair<int,int> t, bool ea, bool temp = false);
 
 
         int getX();

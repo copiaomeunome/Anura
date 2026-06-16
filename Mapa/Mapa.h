@@ -30,6 +30,8 @@ class Mapa {
         pair<int,int> getTamanho();
         pair<int,int> getCamera();
         vector<NPC>& getNPCs();
+        void addDamageAreas(DamageArea da);
+        void removeDamageArea(int i);
 };
 
 #endif

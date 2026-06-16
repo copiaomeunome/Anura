@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <memory>
 #include <algorithm>
 #include <raylib.h>
 
@@ -9,6 +10,8 @@
 #include "Mapa/Mapa.h"
 #include "Protagonista/Protagonista.h"
 #include "Inimigo/Inimigo.h"
+#include "Inimigo/Inimigo_melee/Inimigo_melee.h"
+#include "Inimigo/Inimigo_ranged/Inimigo_ranged.h"
 #include "Dialogo/Dialogo.h"
 #include "NPC/NPC.h"
 #include "Main.h"
@@ -216,7 +219,7 @@ void desenha_mapa_e_prota(Mapa mapa1, Protagonista p, int largura, int altura, T
             );
 }
 
-vector<int> checa_dar_dano(vector<Inimigo>& inimigos, DamageArea dano){
+vector<int> checa_dar_dano(vector<unique_ptr<Inimigo>>& inimigos, DamageArea dano){
     vector<int> resp;
     for(int indice = 0; indice < inimigos.size(); indice++)
         if (CheckCollisionRecs(
@@ -227,14 +230,14 @@ vector<int> checa_dar_dano(vector<Inimigo>& inimigos, DamageArea dano){
                 (float)dano.getTamanhoY()
             },
             {
-                (float)inimigos[indice].getX(),
-                (float)inimigos[indice].getY(),
-                (float)inimigos[indice].getTamanhoX(),
-                (float)inimigos[indice].getTamanhoY()
+                (float)inimigos[indice]->getX(),
+                (float)inimigos[indice]->getY(),
+                (float)inimigos[indice]->getTamanhoX(),
+                (float)inimigos[indice]->getTamanhoY()
             }
         )){
-            inimigos[indice].alteraVida(dano.getDano()*-1);
-            if(inimigos[indice].getVida()<=0) resp.push_back(indice);
+            inimigos[indice]->alteraVida(dano.getDano()*-1);
+            if(inimigos[indice]->getVida()<=0) resp.push_back(indice);
         }
     return resp;
 }
@@ -255,8 +258,10 @@ bool checa_tomar_dano(Protagonista& p, vector<DamageArea> areas_de_dano){
                 (float)e.getTamanhoY()
             }
         )){
-            p.alteraVida(e.getDano()*-1);
-            return true;
+            if(!e.ehAliada){
+                p.alteraVida(e.getDano()*-1);
+                return true;
+            }
         }
     return false;
 }
@@ -284,9 +289,9 @@ int main() {
     Protagonista p(4,{100,100}, {100,100},10, 100);
     Texture2D texturaProtagonista = LoadTexture("Protagonista/Assets/sapo_sentado.jpg");
     vector<Projetil> projeteis;
-    Inimigo inimigo({600,100}, {100,100}, 3, true, 1, 700, 3);
-    vector<Inimigo> inimigos;
-    inimigos.push_back(inimigo);
+    vector<unique_ptr<Inimigo>> inimigos;
+    inimigos.push_back(make_unique<Inimigo_ranged>(pair<int,int>{600,100}, pair<int,int>{100,100}, 3, true, 1, 700, 3));
+    inimigos.push_back(make_unique<Inimigo_melee>(pair<int,int>{900,300}, pair<int,int>{100,100}, 4, false, 1, 80, 3));
     vector<DamageArea> eMapa1 = {
         {1,{200,200}, {50,50}, false},
         {1,{300,1200}, {50,50}, false},
@@ -320,8 +325,6 @@ int main() {
         } // verifica se morreu
 
         if(status == JOGANDO){
-            
-            
             if(IsKeyDown(KEY_E)){
                 if(cooldown_interacao<=0){
                     for(NPC& n : mapa1.getNPCs())
@@ -336,9 +339,15 @@ int main() {
             }
 
             if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)){
-                vector<int> resp = checa_dar_dano(inimigos,p.bater_melee());
+                Vector2 mousePos = GetMousePosition();
+                DamageArea hitProta = p.bater_melee(mousePos.x + mapa1.getCamera().first, mousePos.y + mapa1.getCamera().second);
+                vector<int> resp = checa_dar_dano(
+                    inimigos,
+                    hitProta
+                );
                 sort(resp.rbegin(), resp.rend());
                 for(int indice : resp) inimigos.erase(inimigos.begin() + indice);
+                mapa1.addDamageAreas(hitProta);
             }
             for (size_t i = 0; i < projeteis.size(); ) {
                 projeteis[i].mover();
@@ -349,21 +358,43 @@ int main() {
                 }
             }
             andar(p, mapa1, largura, altura);
-            
+            if(cooldown_interacao>0) cooldown_interacao--;
+            for(unique_ptr<Inimigo>& i : inimigos){
+                AcaoInimigo acao = i->mover(p);
+                if(acao.projetil.has_value()){
+                    projeteis.push_back(*acao.projetil);
+                }
+                if(acao.areaDano.has_value()){
+                    mapa1.addDamageAreas(*acao.areaDano);
+                }
+            }
             if(cooldown_dano==0){
                 if(checa_tomar_dano(p, mapa1.getDamageAreas()))cooldown_dano = 60;
             }
             if(cooldown_dano>0)cooldown_dano--;
-            if(cooldown_interacao>0) cooldown_interacao--;
-            for(Inimigo& i : inimigos){
-                auto projetil = i.mover_ranged(p);
-                if(projetil.has_value()){
-                    projeteis.push_back(*projetil);
-                }
-            }
             BeginDrawing();
 
             ClearBackground(RAYWHITE);
+            
+            desenha_mapa_e_prota(mapa1,p,largura,altura, texturaProtagonista);
+            for(const unique_ptr<Inimigo>& i : inimigos){
+                DrawRectangle(
+                    i->getX() - mapa1.getCamera().first,
+                    i->getY() - mapa1.getCamera().second,
+                    i->getTamanhoX(),
+                    i->getTamanhoY(),
+                    BLACK
+                );
+            }
+            for(Projetil pr : projeteis){
+                DrawRectangle(
+                    pr.getX() - mapa1.getCamera().first,
+                    pr.getY() - mapa1.getCamera().second,
+                    pr.getTamanhoX(),
+                    pr.getTamanhoY(),
+                    BLACK
+                );
+            }
             DrawText("Use WASD para mover", 20, 20, 20, DARKGRAY);
             DrawText(
                 TextFormat("Vida: %d | cooldown_dano: %d | cooldown_interacao: %d", p.getVida(), cooldown_dano, cooldown_interacao),
@@ -383,30 +414,16 @@ int main() {
             );
             DrawText(s.c_str(),20,95,20,DARKGRAY);
             DrawText(
-                TextFormat("Vida Inimigo: %d",inimigos.size()==0?0:inimigos[0].getVida()),
+                TextFormat("Vida Inimigo: %d",inimigos.size()==0?0:inimigos[0]->getVida()),
                 20,120,20,DARKGRAY
             );
-
-            desenha_mapa_e_prota(mapa1,p,largura,altura, texturaProtagonista);
-            for(Inimigo i : inimigos){
-                DrawRectangle(
-                    i.getX() - mapa1.getCamera().first,
-                    i.getY() - mapa1.getCamera().second,
-                    i.getTamanhoX(),
-                    i.getTamanhoY(),
-                    BLACK
-                );
-            }
-            for(Projetil pr : projeteis){
-                DrawRectangle(
-                    pr.getX() - mapa1.getCamera().first,
-                    pr.getY() - mapa1.getCamera().second,
-                    pr.getTamanhoX(),
-                    pr.getTamanhoY(),
-                    BLACK
-                );
-            }
+            
             EndDrawing();
+            for(int i=mapa1.getDamageAreas().size()-1;i>=0;i--){
+                if(mapa1.getDamageAreas()[i].temporaria){
+                    mapa1.removeDamageArea(i);
+                }
+            }
 
 
         }
@@ -439,6 +456,10 @@ int main() {
                 TextFormat("Vida: %d | cooldown_dano: %d | cooldown_interacao: %d", p.getVida(), cooldown_dano, cooldown_interacao),
                 20,45,20,DARKGRAY
             );
+            DrawText(
+                TextFormat("Vida Inimigo: %d",inimigos.size()==0?0:inimigos[0]->getVida()),
+                20,120,20,DARKGRAY
+            );
             
             DrawText(
                 TextFormat(
@@ -453,12 +474,12 @@ int main() {
             );
             
             desenha_mapa_e_prota(mapa1,p,largura,altura, texturaProtagonista);
-            for(Inimigo i : inimigos){
+            for(const unique_ptr<Inimigo>& i : inimigos){
                 DrawRectangle(
-                    i.getX() - mapa1.getCamera().first,
-                    i.getY() - mapa1.getCamera().second,
-                    i.getTamanhoX(),
-                    i.getTamanhoY(),
+                    i->getX() - mapa1.getCamera().first,
+                    i->getY() - mapa1.getCamera().second,
+                    i->getTamanhoX(),
+                    i->getTamanhoY(),
                     BLACK
                 );
             }
