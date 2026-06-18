@@ -298,12 +298,18 @@ int main() {
     
     StatusJogo status = JOGANDO;
     // CONFIGURAÇÕES INICIAIS
-    InitWindow(800, 600, "Jogo");
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
+
+    InitWindow(1280, 720, "Jogo");
+
     int monitor = GetCurrentMonitor();
     int largura = GetMonitorWidth(monitor);
     int altura = GetMonitorHeight(monitor);
+
     SetWindowSize(largura, altura);
-    ToggleFullscreen();
+    SetWindowPosition(0, 0);
+    SetWindowState(FLAG_WINDOW_UNDECORATED);
+
     SetTargetFPS(60);
 
     
@@ -311,9 +317,10 @@ int main() {
     // VARIÁVEIS
     Protagonista p(4,{100,100}, {100,100},10, 100);
     Texture2D texturaProtagonista = LoadTexture("Protagonista/Assets/sapo_sentado.jpg");
+    Texture2D fundo = LoadTexture("Assets_gerais/background.png");
     vector<Projetil> projeteis;
     vector<unique_ptr<Inimigo>> inimigos;
-    inimigos.push_back(make_unique<Inimigo_ranged>(pair<int,int>{600,100}, pair<int,int>{100,100}, 3, true, 1, 700, 3));
+    inimigos.push_back(make_unique<Inimigo_ranged>(pair<int,int>{600,100}, pair<int,int>{100,100}, 3, true, 1, 500, 3));
     inimigos.push_back(make_unique<Inimigo_melee>(pair<int,int>{900,300}, pair<int,int>{100,100}, 4, false, 1, 80, 3));
     vector<DamageArea> eMapa1 = {
         {1,{200,200}, {50,50}, false},
@@ -410,7 +417,28 @@ int main() {
             BeginDrawing();
 
             ClearBackground(RAYWHITE);
-            
+            Rectangle sourceFundo = {
+                0,
+                0,
+                (float)fundo.width,
+                (float)fundo.height
+            };
+
+            Rectangle destFundo = {
+                (float)-mapa1.getCamera().first,
+                (float)-mapa1.getCamera().second,
+                (float)mapa1.getTamanho().first,
+                (float)mapa1.getTamanho().second
+            };
+
+            DrawTexturePro(
+                fundo,
+                sourceFundo,
+                destFundo,
+                {0, 0},
+                0.0f,
+                WHITE
+            );
             desenha_mapa_e_prota(mapa1,p,largura,altura, texturaProtagonista);
             for(const unique_ptr<Inimigo>& i : inimigos){
                 DrawRectangle(
