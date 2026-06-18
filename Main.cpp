@@ -12,6 +12,8 @@
 #include "Inimigo/Inimigo.h"
 #include "Inimigo/Inimigo_melee/Inimigo_melee.h"
 #include "Inimigo/Inimigo_ranged/Inimigo_ranged.h"
+#include "Item/Item_Arma_Ranged/Item_Arma_Ranged.h"
+#include "Item/Item.h"
 #include "Dialogo/Dialogo.h"
 #include "NPC/NPC.h"
 #include "Main.h"
@@ -315,7 +317,8 @@ int main() {
     
 
     // VARIÁVEIS
-    Protagonista p(4,{100,100}, {100,100},10, 100);
+    Item_Arma_Ranged arma_prota_ranged("arma default", "Comum", 0.0, 1, 2);
+    Protagonista p(4,{100,100}, {100,100},10, 100, arma_prota_ranged);
     Texture2D texturaProtagonista = LoadTexture("Protagonista/Assets/sapo_sentado.jpg");
     Texture2D fundo = LoadTexture("Assets_gerais/background.png");
     vector<Projetil> projeteis;
@@ -514,6 +517,28 @@ int main() {
             BeginDrawing();
 
             ClearBackground(RAYWHITE);
+            Rectangle sourceFundo = {
+                0,
+                0,
+                (float)fundo.width,
+                (float)fundo.height
+            };
+
+            Rectangle destFundo = {
+                (float)-mapa1.getCamera().first,
+                (float)-mapa1.getCamera().second,
+                (float)mapa1.getTamanho().first,
+                (float)mapa1.getTamanho().second
+            };
+
+            DrawTexturePro(
+                fundo,
+                sourceFundo,
+                destFundo,
+                {0, 0},
+                0.0f,
+                WHITE
+            );
             DrawText("Use WASD para mover", 20, 20, 20, DARKGRAY);
             DrawText(
                 TextFormat("Vida: %d | cooldown_dano: %d | cooldown_interacao: %d", p.getVida(), cooldown_dano, cooldown_interacao),
