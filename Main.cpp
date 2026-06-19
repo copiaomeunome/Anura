@@ -16,6 +16,8 @@
 #include "Item/Item.h"
 #include "Dialogo/Dialogo.h"
 #include "NPC/NPC.h"
+#include <cstdlib>
+#include <ctime>
 
 #include "funcoes_gameplay.h"
 #include "desenho.h"
@@ -38,7 +40,7 @@ vector<Mapa> mapas = {
 
 int main() {
     StatusJogo status = JOGANDO;
-
+    srand(time(NULL));
     // CONFIGURAÇÕES INICIAIS
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
 
@@ -106,7 +108,8 @@ int main() {
             true,
             1,
             500,
-            3
+            3,
+            dropsdosmobs
         )
     );
     
@@ -214,13 +217,28 @@ int main() {
             if (IsKeyPressed(KEY_B)) {
                 status = MOCHILA;
             }
+            checa_pegar_itens(p, itens, posicoesItens);
 
             for (int i = (int)inimigos.size() - 1; i >= 0; i--) {
                 if (inimigos[i]->getVida() <= 0) {
                     vector<Item> dropados = inimigos[i]->dropar();
                     itens.insert(itens.end(), dropados.begin(), dropados.end());
-                    for(int j=0;j<dropados.size();j++){
-                        posicoesItens.push_back({inimigos[i]->getX(),inimigos[i]->getY()});
+                    int totalDrops = dropados.size();
+                    int espacamento = 55;
+
+                    for (int j = 0; j < totalDrops; j++) {
+                        int coluna = j % 3;
+                        int linha = j / 3;
+
+                        int colunasNaLinha = totalDrops < 3 ? totalDrops : 3;
+
+                        int offsetX = (coluna - (colunasNaLinha - 1) / 2.0f) * espacamento;
+                        int offsetY = linha * espacamento;
+
+                        posicoesItens.push_back({
+                            inimigos[i]->getX() + offsetX,
+                            inimigos[i]->getY() + offsetY
+                        });
                     }
                     inimigos.erase(inimigos.begin() + i);
                 }
@@ -234,16 +252,10 @@ int main() {
                     mousePos.y + mapa1.getCamera().second
                 );
 
-                vector<int> resp = checa_dar_dano_melee(
+                checa_dar_dano_melee(
                     inimigos,
                     hitProta
                 );
-
-                sort(resp.rbegin(), resp.rend());
-
-                for (int indice : resp) {
-                    inimigos.erase(inimigos.begin() + indice);
-                }
 
                 mapa1.addDamageAreas(hitProta);
             }

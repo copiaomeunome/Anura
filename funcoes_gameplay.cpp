@@ -210,3 +210,40 @@ bool checa_tomar_dano(Protagonista& p, vector<DamageArea> areas_de_dano){
 
     return false;
 }
+
+int checa_pegar_itens(
+    Protagonista& p,
+    vector<Item>& itens,
+    vector<pair<int,int>>& posicoesItens
+) {
+    int quantidadePegos = 0;
+
+    Rectangle hitboxProtagonista = {
+        (float)p.getX(),
+        (float)p.getY(),
+        (float)p.getTamanhoX(),
+        (float)p.getTamanhoY()
+    };
+
+    for (int i = (int)itens.size() - 1; i >= 0; i--) {
+        Rectangle hitboxItem = {
+            (float)posicoesItens[i].first,
+            (float)posicoesItens[i].second,
+            50,
+            50
+        };
+
+        if (CheckCollisionRecs(hitboxProtagonista, hitboxItem)) {
+            bool adicionou = p.adiciona_mochila(itens[i]);
+
+            if (adicionou) {
+                itens.erase(itens.begin() + i);
+                posicoesItens.erase(posicoesItens.begin() + i);
+
+                quantidadePegos++;
+            }
+        }
+    }
+
+    return quantidadePegos;
+}

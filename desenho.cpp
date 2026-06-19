@@ -220,14 +220,95 @@ void desenharProjeteis(vector<Projetil>& projeteis, Mapa& mapa1) {
 }
 
 void desenharItens(vector<Item>& itens, vector<pair<int,int>>& posicoes, Mapa& mapa1) {
-    for (int i = 0; i < itens.size(); i++) {
-        DrawRectangle(
-            posicoes[i].first - mapa1.getCamera().first,
-            posicoes[i].second - mapa1.getCamera().second,
-            50,
-            50,
-            BLACK
+    int tamanhoSlot = 46;
+    int tamanhoIcone = 34;
+
+    for (int i = 0; i < (int)itens.size(); i++) {
+        int telaX = posicoes[i].first - mapa1.getCamera().first;
+        int telaY = posicoes[i].second - mapa1.getCamera().second;
+
+        Rectangle fundoItem = {
+            (float)telaX,
+            (float)telaY,
+            (float)tamanhoSlot,
+            (float)tamanhoSlot
+        };
+
+        Rectangle icone = {
+            (float)telaX + (tamanhoSlot - tamanhoIcone) / 2.0f,
+            (float)telaY + (tamanhoSlot - tamanhoIcone) / 2.0f,
+            (float)tamanhoIcone,
+            (float)tamanhoIcone
+        };
+
+        // sombra
+        DrawRectangleRounded(
+            {
+                fundoItem.x + 4,
+                fundoItem.y + 4,
+                fundoItem.width,
+                fundoItem.height
+            },
+            0.20f,
+            8,
+            Fade(BLACK, 0.35f)
         );
+
+        // fundo do item
+        DrawRectangleRounded(
+            fundoItem,
+            0.20f,
+            8,
+            Color{35, 32, 28, 230}
+        );
+
+        // borda baseada na raridade
+        Color corBorda = Color{180, 180, 180, 255};
+
+        if (itens[i].getRaridade() == "Comum") {
+            corBorda = Color{190, 190, 190, 255};
+        }
+        else if (itens[i].getRaridade() == "Raro") {
+            corBorda = Color{80, 150, 255, 255};
+        }
+        else if (itens[i].getRaridade() == "Epico" || itens[i].getRaridade() == "Épico") {
+            corBorda = Color{180, 90, 255, 255};
+        }
+        else if (itens[i].getRaridade() == "Lendario" || itens[i].getRaridade() == "Lendário") {
+            corBorda = Color{255, 170, 40, 255};
+        }
+
+        DrawRectangleLinesEx(
+            fundoItem,
+            2,
+            corBorda
+        );
+
+        Texture2D texturaItem = pegarTexturaItem(itens[i].getImagem());
+
+        if (texturaItem.id != 0) {
+            DrawTexturePro(
+                texturaItem,
+                {
+                    0,
+                    0,
+                    (float)texturaItem.width,
+                    (float)texturaItem.height
+                },
+                icone,
+                {0, 0},
+                0.0f,
+                WHITE
+            );
+        }
+        else {
+            DrawRectangleRounded(
+                icone,
+                0.20f,
+                8,
+                Color{150, 105, 45, 255}
+            );
+        }
     }
 }
 

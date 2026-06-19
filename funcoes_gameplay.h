@@ -9,6 +9,7 @@
 #include "Mapa/Mapa.h"
 #include "Protagonista/Protagonista.h"
 #include "Inimigo/Inimigo.h"
+#include "Item/Item.h"
 
 int limitar(int valor, int minimo, int maximo);
 
@@ -31,6 +32,12 @@ std::vector<int> checa_dar_dano_melee(
 bool checa_tomar_dano(
     Protagonista& p,
     std::vector<DamageArea> areas_de_dano
+);
+
+int checa_pegar_itens(
+    Protagonista& p,
+    vector<Item>& itens,
+    vector<pair<int,int>>& posicoesItens
 );
 
 #endif

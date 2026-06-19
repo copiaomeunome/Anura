@@ -42,10 +42,21 @@ void Inimigo::alteraVida(int d){vida += d;}
 
 vector<Item> Inimigo::dropar(){
     vector<Item> itens;
+
     for(Item i : drop){
-        float sorteio = (float)rand() / RAND_MAX; // número aleatório entre 0 e 1
-        if(i.getDropRate()>sorteio)
+        float sorteio = (float)rand() / (float)RAND_MAX;
+
+        cout << "Item: " << i.getNome()
+             << " | dropRate: " << i.getDropRate()
+             << " | sorteio: " << sorteio << endl;
+
+        if(sorteio <= i.getDropRate()){
+            cout << "DROPOU" << endl;
             itens.push_back(i);
+        } else {
+            cout << "NAO DROPOU" << endl;
+        }
     }
+
     return itens;
 }
