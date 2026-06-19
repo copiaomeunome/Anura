@@ -13,7 +13,7 @@ class Item_Arma_Ranged : public Item {
         float move_speed;
 
     public:
-        Item_Arma_Ranged(string n, string r, float dr, int d, float ms);
+        Item_Arma_Ranged(string n, string r, float dr, int d, float ms, string i);
         int getDano();
         float getMs();
 };

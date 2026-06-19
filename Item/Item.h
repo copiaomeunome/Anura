@@ -11,12 +11,14 @@ class Item {
         string nome;
         string raridade;
         float dropRate;
+        string imagem;
 
     public:
-        Item(string n, string r, float dr);
+        Item(string n, string r, float dr, string i);
         float getDropRate();
         string getNome();
         string getRaridade();
+        string getImagem();
 };
 
 #endif

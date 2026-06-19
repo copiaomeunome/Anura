@@ -17,9 +17,10 @@ class Protagonista {
         int range_melee;
         Item_Arma_Ranged arma_ranged;
         vector<Item> mochila;
+        int tam_mochila;
 
     public:
-        Protagonista(int v, pair<int,int> p, pair<int,int> t, int ms, int rm, Item_Arma_Ranged arma_r);
+        Protagonista(int v, pair<int,int> p, pair<int,int> t, int ms, int rm, Item_Arma_Ranged arma_r, int tm);
 
         int getX();
         int getY();
@@ -34,6 +35,11 @@ class Protagonista {
         int getVida();
         DamageArea bater_melee(int x, int y);
         Projetil bater_Ranged(int x, int y);
+        bool adiciona_mochila(Item i);
+        void troca_mochila(int tam);
+        void tira_da_mochila(int i);
+        vector<Item> getMochila();
+        int getTamMochila();
 };
 
 #endif

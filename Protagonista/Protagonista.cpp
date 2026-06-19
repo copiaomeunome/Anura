@@ -4,8 +4,8 @@
 #include "../Item/Item.h"
 #include "../Projetil/Projetil.h"
 #include <cmath>
-Protagonista::Protagonista(int v, pair<int,int> p, pair<int,int> t, int ms, int rm, Item_Arma_Ranged arma_r)
-    : vida(v), posicao(p), tamanho(t), move_speed(ms), range_melee(rm), arma_ranged(arma_r) {}
+Protagonista::Protagonista(int v, pair<int,int> p, pair<int,int> t, int ms, int rm, Item_Arma_Ranged arma_r, int tm)
+    : vida(v), posicao(p), tamanho(t), move_speed(ms), range_melee(rm), arma_ranged(arma_r), tam_mochila(tm) {}
 
 int Protagonista::getX() {return posicao.first;}
 int Protagonista::getY() {return posicao.second;}
@@ -16,6 +16,8 @@ int Protagonista::getTamanhoX() {return tamanho.first;}
 int Protagonista::getTamanhoY() {return tamanho.second;}
 int Protagonista::getMS() {return move_speed;}
 int Protagonista::getVida() {return vida;}
+vector<Item> Protagonista::getMochila(){return mochila;}
+int Protagonista::getTamMochila(){return tam_mochila;}
 
 DamageArea Protagonista::bater_melee(int x, int y){
     float centroX = posicao.first + tamanho.first / 2.0f;
@@ -54,4 +56,18 @@ Projetil Protagonista::bater_Ranged(int x, int y){
 
     Projetil pr({{posicao.first+tamanho.first/2,posicao.second+tamanho.second/2},{40,40},ms,arma_ranged.getDano(),1,false});
     return pr;
+}
+
+bool Protagonista::adiciona_mochila(Item i){
+    if(!(mochila.size()>=tam_mochila)){
+        mochila.push_back(i);
+        return true;
+    }
+    return false;
+}
+void Protagonista::troca_mochila(int t){
+    tam_mochila = t;
+}
+void Protagonista::tira_da_mochila(int i){
+    mochila.erase(mochila.begin() + i);
 }

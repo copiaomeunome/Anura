@@ -3,7 +3,7 @@
 #include <vector>
 #include <string>
 
-Item_Arma_Ranged::Item_Arma_Ranged(string n, string r, float dr, int d, float ms) : Item(n,r,dr){
+Item_Arma_Ranged::Item_Arma_Ranged(string n, string r, float dr, int d, float ms, string i) : Item(n,r,dr, i){
     dano = d;
     move_speed = ms;
 }

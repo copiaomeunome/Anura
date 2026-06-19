@@ -26,9 +26,10 @@ class Inimigo {
         int range;
         int vida;
         int cd_atack;
+        vector<Item> drop;
 
     public:
-        Inimigo(pair<int,int> p, pair<int,int> t, int ms, bool eR, int d, int r, int v);
+        Inimigo(pair<int,int> p, pair<int,int> t, int ms, bool eR, int d, int r, int v, vector<Item> dr);
         virtual ~Inimigo() = default;
 
         int getX();
@@ -44,6 +45,7 @@ class Inimigo {
         
         virtual AcaoInimigo mover(Protagonista p) = 0;
         void alteraVida(int d);
+        vector<Item> dropar(); 
 };
 
 #endif

@@ -16,289 +16,29 @@
 #include "Item/Item.h"
 #include "Dialogo/Dialogo.h"
 #include "NPC/NPC.h"
-#include "Main.h"
+
+#include "funcoes_gameplay.h"
+#include "desenho.h"
 
 using namespace std;
 
-
-int current_map = 0;
-vector<Mapa> mapas = {
-
-};
-
-int limitar(int valor, int minimo, int maximo){
-    return max(minimo, min(valor, maximo));
-}
-
-bool checa_colisao_parede(Protagonista& p, Mapa mapa){
-    for(Parede par : mapa.getParedes())
-        if (CheckCollisionRecs(
-            {
-                (float)p.getX(),
-                (float)p.getY(),
-                (float)p.getTamanhoX(),
-                (float)p.getTamanhoY()
-            },
-            {
-                (float)par.getX(),
-                (float)par.getY(),
-                (float)par.getTamanhoX(),
-                (float)par.getTamanhoY()
-            }
-        )){
-            return true;
-        }
-    return false;
-}
-bool checa_colisao_projetil(Protagonista& p, Mapa mapa, Projetil& bala, vector<unique_ptr<Inimigo>>& inimigos){
-    bool resp = false;
-    if(bala.getX()<0 || bala.getY()<0 || bala.getX()>mapa.getTamanho().first || bala.getY()>mapa.getTamanho().second) return true;
-    for(Parede par : mapa.getParedes())        if (CheckCollisionRecs(
-            {
-                (float)bala.getX(),
-                (float)bala.getY(),
-                (float)bala.getTamanhoX(),
-                (float)bala.getTamanhoY()
-            },
-            {
-                (float)par.getX(),
-                (float)par.getY(),
-                (float)par.getTamanhoX(),
-                (float)par.getTamanhoY()
-            }
-        )){
-            bala.ricochetear(par);
-            if(bala.ricochetes==0){
-                resp = true;
-            }
-        }
-    if(bala.ehInimigo){
-        if(CheckCollisionRecs(
-            {
-                (float)bala.getX(),
-                (float)bala.getY(),
-                (float)bala.getTamanhoX(),
-                (float)bala.getTamanhoY()
-            },
-            {
-                (float)p.getX(),
-                (float)p.getY(),
-                (float)p.getTamanhoX(),
-                (float)p.getTamanhoY()
-            }
-        )){
-            p.alteraVida(-bala.getDano());
-            resp = true;
-        }
-    }
-    else{
-        for(unique_ptr<Inimigo>& i : inimigos){
-            if(CheckCollisionRecs(
-                {
-                    (float)bala.getX(),
-                    (float)bala.getY(),
-                    (float)bala.getTamanhoX(),
-                    (float)bala.getTamanhoY()
-                },
-                {
-                    (float)i->getX(),
-                    (float)i->getY(),
-                    (float)i->getTamanhoX(),
-                    (float)i->getTamanhoY()
-                }
-            )){
-                i->alteraVida(-bala.getDano());
-                resp = true;
-            }
-        }
-    }
-
-    return resp;
-}
-
-void andar(Protagonista& p, Mapa& mapa, int largura, int altura){
-    int movimentoX = 0;
-    int movimentoY = 0;
-    int posicaoAnteriorX = p.getX();
-    int posicaoAnteriorY = p.getY();
-
-    if (IsKeyDown(KEY_D)){
-        movimentoX += p.getMS();
-    }
-    if (IsKeyDown(KEY_A)){
-        movimentoX -= p.getMS();
-    }
-    if (IsKeyDown(KEY_S)){
-        movimentoY += p.getMS();
-    }
-    if (IsKeyDown(KEY_W)){
-        movimentoY -= p.getMS();
-    }
-
-    if (movimentoX != 0) {
-        p.andarX(movimentoX);
-        int limiteX = mapa.getTamanho().first - p.getTamanhoX();
-        int posicaoCorrigidaX = limitar(p.getX(), 0, limiteX);
-        p.andarX(posicaoCorrigidaX - p.getX());
-        if (checa_colisao_parede(p, mapa)) {
-            p.andarX(posicaoAnteriorX - p.getX());
-        }
-    }
-
-    if (movimentoY != 0) {
-        p.andarY(movimentoY);
-        int limiteY = mapa.getTamanho().second - p.getTamanhoY();
-        int posicaoCorrigidaY = limitar(p.getY(), 0, limiteY);
-        p.andarY(posicaoCorrigidaY - p.getY());
-        if (checa_colisao_parede(p, mapa)) {
-            p.andarY(posicaoAnteriorY - p.getY());
-        }
-    }
-
-    mapa.atualizarCamera({p.getX() + p.getTamanhoX() / 2, p.getY() + p.getTamanhoY() / 2}, largura, altura);
-}
-
-void desenha_mapa_e_prota(Mapa mapa1, Protagonista p, int largura, int altura, Texture2D texturaProtagonista){
-    
-    Rectangle sourceProtagonista = { // MODIFICAR AQUI PARA A ANIMAÇÃO -------------------------------------------------------------------------------------
-        0,
-        0,
-        (float)texturaProtagonista.width,
-        (float)texturaProtagonista.height
-    };
-
-    Rectangle destProtagonista = {
-        (float)(p.getX() - mapa1.getCamera().first),
-        (float)(p.getY() - mapa1.getCamera().second),
-        (float)p.getTamanhoX(),
-        (float)p.getTamanhoY()
-    };
-
-    DrawTexturePro(
-        texturaProtagonista,
-        sourceProtagonista,
-            destProtagonista,
-            {0, 0},
-            0.0f,
-            WHITE
-    );
-    for(DamageArea e : mapa1.getDamageAreas())
-        if(CheckCollisionRecs(
-            {
-                (float)mapa1.getCamera().first,
-                (float)mapa1.getCamera().second,
-                (float)largura,
-                (float)altura
-            },
-            {
-                (float)e.getX(),
-                (float)e.getY(),
-                (float)e.getTamanhoX(),
-                (float)e.getTamanhoY()
-            }
-        ))
-    DrawRectangle(e.getX() - mapa1.getCamera().first, e.getY() - mapa1.getCamera().second, e.getTamanhoX(), e.getTamanhoY(), RED);
-    for(Parede e : mapa1.getParedes())
-        if(CheckCollisionRecs(
-            {
-                (float)mapa1.getCamera().first,
-                (float)mapa1.getCamera().second,
-                (float)largura,
-                (float)altura
-            },
-            {
-                (float)e.getX(),
-                (float)e.getY(),
-                (float)e.getTamanhoX(),
-                (float)e.getTamanhoY()
-            }
-        ))
-            DrawRectangle(
-                e.getX() - mapa1.getCamera().first,
-                e.getY() - mapa1.getCamera().second,
-                e.getTamanhoX(),
-                e.getTamanhoY(),
-                GREEN
-            );
-    for(NPC n : mapa1.getNPCs())
-        if(CheckCollisionRecs(
-            {
-                (float)mapa1.getCamera().first,
-                (float)mapa1.getCamera().second,
-                (float)largura,
-                (float)altura
-            },
-            {
-                (float)n.getX(),
-                (float)n.getY(),
-                (float)n.getTamanhoX(),
-                (float)n.getTamanhoY()
-            }
-        ))
-            DrawRectangle(
-                n.getX() - mapa1.getCamera().first,
-                n.getY() - mapa1.getCamera().second,
-                n.getTamanhoX(),
-                n.getTamanhoY(),
-                BLACK
-            );
-}
-
-vector<int> checa_dar_dano_melee(vector<unique_ptr<Inimigo>>& inimigos, DamageArea dano){
-    vector<int> resp;
-    for(int indice = 0; indice < inimigos.size(); indice++)
-        if (CheckCollisionRecs(
-            {
-                (float)dano.getX(),
-                (float)dano.getY(),
-                (float)dano.getTamanhoX(),
-                (float)dano.getTamanhoY()
-            },
-            {
-                (float)inimigos[indice]->getX(),
-                (float)inimigos[indice]->getY(),
-                (float)inimigos[indice]->getTamanhoX(),
-                (float)inimigos[indice]->getTamanhoY()
-            }
-        )){
-            inimigos[indice]->alteraVida(dano.getDano()*-1);
-            if(inimigos[indice]->getVida()<=0) resp.push_back(indice);
-        }
-    return resp;
-}
-
-bool checa_tomar_dano(Protagonista& p, vector<DamageArea> areas_de_dano){
-    for(DamageArea e : areas_de_dano)
-        if (CheckCollisionRecs(
-            {
-                (float)p.getX(),
-                (float)p.getY(),
-                (float)p.getTamanhoX(),
-                (float)p.getTamanhoY()
-            },
-            {
-                (float)e.getX(),
-                (float)e.getY(),
-                (float)e.getTamanhoX(),
-                (float)e.getTamanhoY()
-            }
-        )){
-            if(!e.ehAliada){
-                p.alteraVida(e.getDano()*-1);
-                return true;
-            }
-        }
-    return false;
-}
 enum StatusJogo {
     DIALOGO,
     JOGANDO,
     CUTSCENE,
-    PAUSADO
+    PAUSADO,
+    MOCHILA
 };
+
+int current_map = 0;
+
+vector<Mapa> mapas = {
+
+};
+
 int main() {
-    
     StatusJogo status = JOGANDO;
+
     // CONFIGURAÇÕES INICIAIS
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
 
@@ -314,278 +54,442 @@ int main() {
 
     SetTargetFPS(60);
 
+    // VARIÁVEIS
+    Item_Arma_Ranged arma_prota_ranged(
+        "arma default",
+        "Comum",
+        0.0,
+        1,
+        2,
+        "arco.png"
+    );
+    Item_Arma_Ranged arma_drop(
+        "arma dropada",
+        "Comum",
+        0.6,
+        1,
+        2,
+        "arco.png"
+    );
     
 
-    // VARIÁVEIS
-    Item_Arma_Ranged arma_prota_ranged("arma default", "Comum", 0.0, 1, 2);
-    Protagonista p(4,{100,100}, {100,100},10, 100, arma_prota_ranged);
+    Protagonista p(
+        4,
+        {100, 100},
+        {100, 100},
+        10,
+        100,
+        arma_prota_ranged,
+        5
+    );
+
+    p.adiciona_mochila(arma_prota_ranged);
+    p.adiciona_mochila(arma_prota_ranged);
+    p.adiciona_mochila(arma_prota_ranged);
+
     Texture2D texturaProtagonista = LoadTexture("Protagonista/Assets/sapo_sentado.jpg");
     Texture2D fundo = LoadTexture("Assets_gerais/background.png");
+
     vector<Projetil> projeteis;
+    vector<Item> itens;
+    vector<Item> dropsdosmobs;
+    dropsdosmobs.push_back(arma_drop);
+    dropsdosmobs.push_back(arma_drop);
+    dropsdosmobs.push_back(arma_drop);
     vector<unique_ptr<Inimigo>> inimigos;
-    inimigos.push_back(make_unique<Inimigo_ranged>(pair<int,int>{600,100}, pair<int,int>{100,100}, 3, true, 1, 500, 3));
-    inimigos.push_back(make_unique<Inimigo_melee>(pair<int,int>{900,300}, pair<int,int>{100,100}, 4, false, 1, 80, 3));
+
+    inimigos.push_back(
+        make_unique<Inimigo_ranged>(
+            pair<int, int>{600, 100},
+            pair<int, int>{100, 100},
+            3,
+            true,
+            1,
+            500,
+            3
+        )
+    );
+    
+    inimigos.push_back(
+        make_unique<Inimigo_melee>(
+            pair<int, int>{900, 300},
+            pair<int, int>{100, 100},
+            4,
+            false,
+            1,
+            80,
+            3,
+            dropsdosmobs
+        )
+    );
+
     vector<DamageArea> eMapa1 = {
-        {1,{200,200}, {50,50}, false},
-        {1,{300,1200}, {50,50}, false},
-        {1,{400,900}, {50,50}, false},
-        {1,{500,700}, {50,50}, false}
+        {1, {200, 200}, {50, 50}, false},
+        {1, {300, 1200}, {50, 50}, false},
+        {1, {400, 900}, {50, 50}, false},
+        {1, {500, 700}, {50, 50}, false}
     };
+
     vector<Parede> pMapa1 = {
-        {{200,500}, {100,50}},
-        {{300,100}, {100,50}},
-        {{400,500}, {100,50}},
-        {{900,900}, {200,50}}
+        {{200, 500}, {100, 50}},
+        {{300, 100}, {100, 50}},
+        {{400, 500}, {100, 50}},
+        {{900, 900}, {200, 50}}
     };
-    vector<string> falas = {"Olá", "Bom dia", "Como está?"};
+
+    vector<string> falas = {
+        "Olá",
+        "Bom dia",
+        "Como está?"
+    };
+
     Dialogo dialogo1(falas);
+
     vector<Dialogo> dialogos;
     dialogos.push_back(dialogo1);
-    NPC npc1({1500,1500}, {100,100}, dialogos);
-    NPC npc2({1900,1900}, {100,100}, dialogos);
-    NPC npc3({2100,1500}, {100,100}, dialogos);
 
-    vector<NPC> npcMapa1 = {npc1, npc2, npc3};
-    Mapa mapa1 = {{3000,3000},{0,0}, eMapa1, pMapa1, npcMapa1};
-    mapa1.atualizarCamera({p.getX() + p.getTamanhoX() / 2, p.getY() + p.getTamanhoY() / 2}, largura, altura);
-    int cooldown_dano=0;
+    NPC npc1({1500, 1500}, {100, 100}, dialogos);
+    NPC npc2({1900, 1900}, {100, 100}, dialogos);
+    NPC npc3({2100, 1500}, {100, 100}, dialogos);
+    
+    vector<pair<int,int>> posicoesItens;
+    vector<NPC> npcMapa1 = {
+        npc1,
+        npc2,
+        npc3
+    };
+
+    Mapa mapa1 = {
+        {3000, 3000},
+        {0, 0},
+        eMapa1,
+        pMapa1,
+        npcMapa1
+    };
+
+    mapa1.atualizarCamera(
+        {
+            p.getX() + p.getTamanhoX() / 2,
+            p.getY() + p.getTamanhoY() / 2
+        },
+        largura,
+        altura
+    );
+
+    int cooldown_dano = 0;
     int cooldown_interacao = 0;
+    int itemSelecionado = 0;
     string s = "nada";
+
     while (!WindowShouldClose()) {
-        
-        if(p.getVida()<=0){
+        if (p.getVida() <= 0) {
             break;
-        } // verifica se morreu
-        if(status == JOGANDO){
-            if(IsKeyDown(KEY_E)){
-                if(cooldown_interacao<=0){
-                    for(NPC& n : mapa1.getNPCs())
-                        if(CheckCollisionRecs(
-                            {(float)n.getX(),(float)n.getY(),(float)n.getTamanhoX(),(float)n.getTamanhoY()},
-                            {(float)p.getX(),(float)p.getY(),(float)p.getTamanhoX(),(float)p.getTamanhoY()}
-                        )){
+        }
+
+        if (status == JOGANDO) {
+            if (IsKeyDown(KEY_E)) {
+                if (cooldown_interacao <= 0) {
+                    for (NPC& n : mapa1.getNPCs()) {
+                        if (CheckCollisionRecs(
+                            {
+                                (float)n.getX(),
+                                (float)n.getY(),
+                                (float)n.getTamanhoX(),
+                                (float)n.getTamanhoY()
+                            },
+                            {
+                                (float)p.getX(),
+                                (float)p.getY(),
+                                (float)p.getTamanhoX(),
+                                (float)p.getTamanhoY()
+                            }
+                        )) {
                             n.getNextDialogo().index = 0;
                             status = DIALOGO;
                         }
+                    }
                 }
+            }
+
+            if (IsKeyPressed(KEY_B)) {
+                status = MOCHILA;
             }
 
             for (int i = (int)inimigos.size() - 1; i >= 0; i--) {
                 if (inimigos[i]->getVida() <= 0) {
+                    vector<Item> dropados = inimigos[i]->dropar();
+                    itens.insert(itens.end(), dropados.begin(), dropados.end());
+                    for(int j=0;j<dropados.size();j++){
+                        posicoesItens.push_back({inimigos[i]->getX(),inimigos[i]->getY()});
+                    }
                     inimigos.erase(inimigos.begin() + i);
                 }
             }
 
-            if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)){
+            if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
                 Vector2 mousePos = GetMousePosition();
-                DamageArea hitProta = p.bater_melee(mousePos.x + mapa1.getCamera().first, mousePos.y + mapa1.getCamera().second);
+
+                DamageArea hitProta = p.bater_melee(
+                    mousePos.x + mapa1.getCamera().first,
+                    mousePos.y + mapa1.getCamera().second
+                );
+
                 vector<int> resp = checa_dar_dano_melee(
                     inimigos,
                     hitProta
                 );
+
                 sort(resp.rbegin(), resp.rend());
-                for(int indice : resp) inimigos.erase(inimigos.begin() + indice);
+
+                for (int indice : resp) {
+                    inimigos.erase(inimigos.begin() + indice);
+                }
+
                 mapa1.addDamageAreas(hitProta);
             }
 
-            if(IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)){
+            if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
                 Vector2 mousePos = GetMousePosition();
-                Projetil hitProta = p.bater_Ranged(mousePos.x + mapa1.getCamera().first, mousePos.y + mapa1.getCamera().second);
+
+                Projetil hitProta = p.bater_Ranged(
+                    mousePos.x + mapa1.getCamera().first,
+                    mousePos.y + mapa1.getCamera().second
+                );
+
                 projeteis.push_back(hitProta);
             }
 
             for (size_t i = 0; i < projeteis.size(); ) {
                 projeteis[i].mover();
+
                 if (checa_colisao_projetil(p, mapa1, projeteis[i], inimigos)) {
                     projeteis.erase(projeteis.begin() + i);
                 } else {
                     i++;
                 }
             }
+
             andar(p, mapa1, largura, altura);
-            if(cooldown_interacao>0) cooldown_interacao--;
-            for(unique_ptr<Inimigo>& i : inimigos){
+
+            if (cooldown_interacao > 0) {
+                cooldown_interacao--;
+            }
+
+            for (unique_ptr<Inimigo>& i : inimigos) {
                 AcaoInimigo acao = i->mover(p);
-                if(acao.projetil.has_value()){
+
+                if (acao.projetil.has_value()) {
                     projeteis.push_back(*acao.projetil);
                 }
-                if(acao.areaDano.has_value()){
+
+                if (acao.areaDano.has_value()) {
                     mapa1.addDamageAreas(*acao.areaDano);
                 }
             }
-            if(cooldown_dano==0){
-                if(checa_tomar_dano(p, mapa1.getDamageAreas()))cooldown_dano = 60;
+
+            if (cooldown_dano == 0) {
+                if (checa_tomar_dano(p, mapa1.getDamageAreas())) {
+                    cooldown_dano = 60;
+                }
             }
-            if(cooldown_dano>0)cooldown_dano--;
+
+            if (cooldown_dano > 0) {
+                cooldown_dano--;
+            }
+
             BeginDrawing();
 
             ClearBackground(RAYWHITE);
-            Rectangle sourceFundo = {
-                0,
-                0,
-                (float)fundo.width,
-                (float)fundo.height
-            };
 
-            Rectangle destFundo = {
-                (float)-mapa1.getCamera().first,
-                (float)-mapa1.getCamera().second,
-                (float)mapa1.getTamanho().first,
-                (float)mapa1.getTamanho().second
-            };
+            desenharFundo(fundo, mapa1, largura, altura);
 
-            DrawTexturePro(
-                fundo,
-                sourceFundo,
-                destFundo,
-                {0, 0},
-                0.0f,
-                WHITE
+            desenha_mapa_e_prota(
+                mapa1,
+                p,
+                largura,
+                altura,
+                texturaProtagonista
             );
-            desenha_mapa_e_prota(mapa1,p,largura,altura, texturaProtagonista);
-            for(const unique_ptr<Inimigo>& i : inimigos){
-                DrawRectangle(
-                    i->getX() - mapa1.getCamera().first,
-                    i->getY() - mapa1.getCamera().second,
-                    i->getTamanhoX(),
-                    i->getTamanhoY(),
-                    BLACK
-                );
-            }
-            for(Projetil pr : projeteis){
-                DrawRectangle(
-                    pr.getX() - mapa1.getCamera().first,
-                    pr.getY() - mapa1.getCamera().second,
-                    pr.getTamanhoX(),
-                    pr.getTamanhoY(),
-                    BLACK
-                );
-            }
-            DrawText("Use WASD para mover", 20, 20, 20, DARKGRAY);
-            DrawText(
-                TextFormat("Vida: %d | cooldown_dano: %d | cooldown_interacao: %d", p.getVida(), cooldown_dano, cooldown_interacao),
-                20,45,20,DARKGRAY
+
+            desenharInimigos(inimigos, mapa1);
+
+            desenharProjeteis(projeteis, mapa1);
+            desenharItens(itens, posicoesItens, mapa1);
+
+            desenharHUD(
+                p,
+                mapa1,
+                largura,
+                altura,
+                cooldown_dano,
+                cooldown_interacao,
+                s,
+                inimigos
             );
-            
-            DrawText(
-                TextFormat(
-                    "Jogador: x=%d y=%d | Camera: x=%d y=%d | Tamanho tela: largura=%d altura=%d",
-                    p.getX(),
-                    p.getY(),
-                    mapa1.getCamera().first,
-                    mapa1.getCamera().second,
-                    largura,
-                    altura
-                ),20,70,20,DARKGRAY
-            );
-            DrawText(s.c_str(),20,95,20,DARKGRAY);
-            DrawText(
-                TextFormat("Vida Inimigo: %d",inimigos.size()==0?0:inimigos[0]->getVida()),
-                20,120,20,DARKGRAY
-            );
-            
+            desenharHotbar(p, largura, altura);
             EndDrawing();
-            for(int i=mapa1.getDamageAreas().size()-1;i>=0;i--){
-                if(mapa1.getDamageAreas()[i].temporaria){
+
+            for (int i = mapa1.getDamageAreas().size() - 1; i >= 0; i--) {
+                if (mapa1.getDamageAreas()[i].temporaria) {
                     mapa1.removeDamageArea(i);
                 }
             }
-
-
         }
-        if(status == DIALOGO){
-            if(IsKeyDown(KEY_E)){
-                if(cooldown_interacao<=0){
-                    for(NPC& n : mapa1.getNPCs())
-                        if(CheckCollisionRecs(
-                            {(float)n.getX(),(float)n.getY(),(float)n.getTamanhoX(),(float)n.getTamanhoY()},
-                            {(float)p.getX(),(float)p.getY(),(float)p.getTamanhoX(),(float)p.getTamanhoY()}
-                        )){
-                            
-                            if(n.getNextDialogo().index >= n.getNextDialogo().getFalas().size()){
-                                n.getNextDialogo().index = 0;
-                                cooldown_interacao =30;
-                                status = JOGANDO;
+
+        else if (status == DIALOGO) {
+            if (IsKeyDown(KEY_E)) {
+                if (cooldown_interacao <= 0) {
+                    for (NPC& n : mapa1.getNPCs()) {
+                        if (CheckCollisionRecs(
+                            {
+                                (float)n.getX(),
+                                (float)n.getY(),
+                                (float)n.getTamanhoX(),
+                                (float)n.getTamanhoY()
+                            },
+                            {
+                                (float)p.getX(),
+                                (float)p.getY(),
+                                (float)p.getTamanhoX(),
+                                (float)p.getTamanhoY()
                             }
-                            s = n.getNextDialogo().getFalas()[n.getNextDialogo().index];
-                            n.getNextDialogo().index++;
+                        )) {
+                            if (n.getNextDialogo().index >= n.getNextDialogo().getFalas().size()) {
+                                n.getNextDialogo().index = 0;
+                                cooldown_interacao = 30;
+                                status = JOGANDO;
+                            } else {
+                                s = n.getNextDialogo().getFalas()[n.getNextDialogo().index];
+                                n.getNextDialogo().index++;
+                            }
                         }
+                    }
+
                     cooldown_interacao = 30;
                 }
             }
-            if(cooldown_interacao>0) cooldown_interacao--;
+
+            if (cooldown_interacao > 0) {
+                cooldown_interacao--;
+            }
+
             BeginDrawing();
 
             ClearBackground(RAYWHITE);
-            Rectangle sourceFundo = {
-                0,
-                0,
-                (float)fundo.width,
-                (float)fundo.height
-            };
 
-            Rectangle destFundo = {
-                (float)-mapa1.getCamera().first,
-                (float)-mapa1.getCamera().second,
-                (float)mapa1.getTamanho().first,
-                (float)mapa1.getTamanho().second
-            };
+            desenharFundo(fundo, mapa1, largura, altura);
 
-            DrawTexturePro(
-                fundo,
-                sourceFundo,
-                destFundo,
-                {0, 0},
-                0.0f,
-                WHITE
+            desenha_mapa_e_prota(
+                mapa1,
+                p,
+                largura,
+                altura,
+                texturaProtagonista
             );
-            DrawText("Use WASD para mover", 20, 20, 20, DARKGRAY);
-            DrawText(
-                TextFormat("Vida: %d | cooldown_dano: %d | cooldown_interacao: %d", p.getVida(), cooldown_dano, cooldown_interacao),
-                20,45,20,DARKGRAY
+
+            desenharInimigos(inimigos, mapa1);
+
+            desenharProjeteis(projeteis, mapa1);
+
+            desenharHUD(
+                p,
+                mapa1,
+                largura,
+                altura,
+                cooldown_dano,
+                cooldown_interacao,
+                s,
+                inimigos
             );
-            DrawText(
-                TextFormat("Vida Inimigo: %d",inimigos.size()==0?0:inimigos[0]->getVida()),
-                20,120,20,DARKGRAY
-            );
-            
-            DrawText(
-                TextFormat(
-                    "Jogador: x=%d y=%d | Camera: x=%d y=%d | Tamanho tela: largura=%d altura=%d",
-                    p.getX(),
-                    p.getY(),
-                    mapa1.getCamera().first,
-                    mapa1.getCamera().second,
-                    largura,
-                    altura
-                ),20,70,20,DARKGRAY
-            );
-            
-            desenha_mapa_e_prota(mapa1,p,largura,altura, texturaProtagonista);
-            for(const unique_ptr<Inimigo>& i : inimigos){
-                DrawRectangle(
-                    i->getX() - mapa1.getCamera().first,
-                    i->getY() - mapa1.getCamera().second,
-                    i->getTamanhoX(),
-                    i->getTamanhoY(),
-                    BLACK
-                );
+
+            desenharDialogo(s, largura, altura);
+
+            EndDrawing();
+        }
+
+        else if (status == MOCHILA) {
+            if (IsKeyPressed(KEY_B)) {
+                status = JOGANDO;
             }
-            for(Projetil pr : projeteis){
-                DrawRectangle(
-                    pr.getX() - mapa1.getCamera().first,
-                    pr.getY() - mapa1.getCamera().second,
-                    pr.getTamanhoX(),
-                    pr.getTamanhoY(),
-                    BLACK
-                );
-            }
-            DrawRectangle(100, altura-400, 2*largura/3, 100, BLUE);
-            DrawText(s.c_str(),200,altura-350,20,BLACK);
+            if(IsKeyPressed(KEY_TAB))
+                if(itemSelecionado>=p.getTamMochila() || itemSelecionado>=p.getMochila().size()-1)
+                    itemSelecionado=0;
+                else
+                    itemSelecionado++;
+            BeginDrawing();
+
+            ClearBackground(RAYWHITE);
+
+            desenharFundo(fundo, mapa1, largura, altura);
+
+            desenha_mapa_e_prota(
+                mapa1,
+                p,
+                largura,
+                altura,
+                texturaProtagonista
+            );
+
+            desenharInimigos(inimigos, mapa1);
+
+            desenharProjeteis(projeteis, mapa1);
+
+            desenharMochila(p, largura, altura, itemSelecionado);
+
+            EndDrawing();
+        }
+
+        else if (status == CUTSCENE) {
+            BeginDrawing();
+
+            ClearBackground(RAYWHITE);
+
+            desenharFundo(fundo, mapa1, largura, altura);
+
+            desenha_mapa_e_prota(
+                mapa1,
+                p,
+                largura,
+                altura,
+                texturaProtagonista
+            );
+
+            desenharInimigos(inimigos, mapa1);
+
+            desenharProjeteis(projeteis, mapa1);
+
+            EndDrawing();
+        }
+
+        else if (status == PAUSADO) {
+            BeginDrawing();
+
+            ClearBackground(RAYWHITE);
+
+            desenharFundo(fundo, mapa1, largura, altura);
+
+            desenha_mapa_e_prota(
+                mapa1,
+                p,
+                largura,
+                altura,
+                texturaProtagonista
+            );
+
+            desenharInimigos(inimigos, mapa1);
+
+            desenharProjeteis(projeteis, mapa1);
+
+            DrawRectangle(0, 0, largura, altura, Fade(BLACK, 0.5f));
+            DrawText("PAUSADO", largura / 2 - 80, altura / 2 - 20, 40, RAYWHITE);
+
             EndDrawing();
         }
     }
+
     UnloadTexture(texturaProtagonista);
+    UnloadTexture(fundo);
+
     CloseWindow();
 
     return 0;

@@ -1,8 +1,8 @@
 #include "Inimigo_melee.h"
 #include <cmath>
 
-Inimigo_melee::Inimigo_melee(pair<int,int> p, pair<int,int> t, int ms, bool eR, int d, int r, int v)
-    : Inimigo(p, t, ms, eR, d, r, v) {}
+Inimigo_melee::Inimigo_melee(pair<int,int> p, pair<int,int> t, int ms, bool eR, int d, int r, int v, vector<Item> dr)
+    : Inimigo(p, t, ms, eR, d, r, v, dr) {}
 
 AcaoInimigo Inimigo_melee::mover(Protagonista p){
     pair<int,int> centro = {posicao.first + tamanho.first / 2, posicao.second + tamanho.second / 2};
