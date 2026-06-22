@@ -4,14 +4,16 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include <utility>
+
 #include <raylib.h>
 
 #include "Mapa/Mapa.h"
 #include "Protagonista/Protagonista.h"
 #include "Projetil/Projetil.h"
 #include "Inimigo/Inimigo.h"
-#include "Item/Item_Arma_Ranged/Item_Arma_Ranged.h"
 #include "Item/Item.h"
+#include "Item/Item_Arma_Ranged/Item_Arma_Ranged.h"
 
 enum AcaoMenu {
     ACAO_NENHUMA,
@@ -27,7 +29,17 @@ AcaoMenu desenharMenuPause(int largura, int altura);
 AcaoMenu desenharMenuGameOver(int largura, int altura);
 AcaoMenu desenharMenuVitoria(int largura, int altura);
 
-void desenharFundo(Texture2D fundo, Mapa& mapa1, int largura, int altura);
+bool desenharBotao(
+    std::string texto,
+    Rectangle botao
+);
+
+void desenharFundo(
+    Texture2D fundo,
+    Mapa& mapa1,
+    int largura,
+    int altura
+);
 
 void desenha_mapa_e_prota(
     Mapa& mapa1,
@@ -37,6 +49,15 @@ void desenha_mapa_e_prota(
     Texture2D texturaProtagonista
 );
 
+void desenha_mapa_e_prota(
+    Mapa& mapa1,
+    Protagonista& p,
+    int largura,
+    int altura,
+    Texture2D texturaProtagonista,
+    Rectangle sourceProtagonista
+);
+
 void desenharInimigos(
     std::vector<std::unique_ptr<Inimigo>>& inimigos,
     Mapa& mapa1
@@ -44,6 +65,12 @@ void desenharInimigos(
 
 void desenharProjeteis(
     std::vector<Projetil>& projeteis,
+    Mapa& mapa1
+);
+
+void desenharItens(
+    std::vector<Item>& itens,
+    std::vector<std::pair<int, int>>& posicoes,
     Mapa& mapa1
 );
 
@@ -58,15 +85,23 @@ void desenharHUD(
     std::vector<std::unique_ptr<Inimigo>>& inimigos
 );
 
-void desenharDialogo(std::string s, int largura, int altura);
+void desenharEquipamentosHUD(
+    Protagonista& p,
+    int largura,
+    int altura
+);
 
-void desenharMochila(Protagonista& p, int largura, int altura, int itemSelecionado, int abaMochila);
-void desenharHotbar(Protagonista& p, int largura, int altura);
-void descarregarTexturasItens();
-void desenharItens(vector<Item>& itens, vector<pair<int,int>>& posicoes, Mapa& mapa1);
-void desenharEquipamentosHUD(Protagonista& p, int largura, int altura);
+void desenharHotbar(
+    Protagonista& p,
+    int largura,
+    int altura
+);
 
-bool desenharBotao(string texto, Rectangle botao);
+void desenharDialogo(
+    std::string s,
+    int largura,
+    int altura
+);
 
 void desenharMochila(
     Protagonista& p,
@@ -75,5 +110,7 @@ void desenharMochila(
     int itemSelecionado,
     int abaMochila
 );
+
+void descarregarTexturasItens();
 
 #endif

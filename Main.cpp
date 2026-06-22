@@ -20,6 +20,7 @@
 #include "Item/Item.h"
 #include "Dialogo/Dialogo.h"
 #include "NPC/NPC.h"
+#include "Animacao.h"
 
 #include "funcoes_gameplay.h"
 #include "desenho.h"
@@ -37,6 +38,40 @@ enum StatusJogo {
     GAME_OVER,
     VITORIA
 };
+
+int obterIndiceAnimacaoSeguro(DadosJogo& jogo) {
+    int indiceAnimacao = (int)jogo.animacaoProta;
+
+    if (indiceAnimacao < 0 || indiceAnimacao >= ANIM_TOTAL) {
+        jogo.animacaoProta = ANIM_PARADO;
+        indiceAnimacao = ANIM_PARADO;
+    }
+
+    return indiceAnimacao;
+}
+
+void atualizarAnimacaoAtual(
+    DadosJogo& jogo,
+    Animacao animacoes[]
+) {
+    int indiceAnimacao = obterIndiceAnimacaoSeguro(jogo);
+    animacoes[indiceAnimacao].atualizar();
+}
+
+void trocarAnimacaoProta(
+    DadosJogo& jogo,
+    Animacao animacoes[],
+    EstadoAnimacaoProta novaAnimacao
+) {
+    if ((int)novaAnimacao < 0 || (int)novaAnimacao >= ANIM_TOTAL) {
+        novaAnimacao = ANIM_PARADO;
+    }
+
+    if (jogo.animacaoProta != novaAnimacao) {
+        jogo.animacaoProta = novaAnimacao;
+        animacoes[jogo.animacaoProta].reiniciar();
+    }
+}
 
 void processarMortesInimigos(
     vector<unique_ptr<Inimigo>>& inimigos,
@@ -76,6 +111,48 @@ void processarMortesInimigos(
     }
 }
 
+void desenharMundoAtual(
+    DadosJogo& jogo,
+    Texture2D fundo,
+    Animacao animacoesProta[],
+    int largura,
+    int altura
+) {
+    int indiceAnimacao = obterIndiceAnimacaoSeguro(jogo);
+
+    desenharFundo(
+        fundo,
+        jogo.mapa1,
+        largura,
+        altura
+    );
+
+    desenha_mapa_e_prota(
+        jogo.mapa1,
+        jogo.p,
+        largura,
+        altura,
+        animacoesProta[indiceAnimacao].getTextura(),
+        animacoesProta[indiceAnimacao].getSource()
+    );
+
+    desenharInimigos(
+        jogo.inimigos,
+        jogo.mapa1
+    );
+
+    desenharProjeteis(
+        jogo.projeteis,
+        jogo.mapa1
+    );
+
+    desenharItens(
+        jogo.itens,
+        jogo.posicoesItens,
+        jogo.mapa1
+    );
+}
+
 int main() {
     srand(time(NULL));
 
@@ -97,12 +174,68 @@ int main() {
 
     SetTargetFPS(60);
 
-    Texture2D texturaProtagonista = LoadTexture("Protagonista/Assets/sapo_sentado.jpg");
+    Texture2D texturaProtaParado = LoadTexture("Protagonista/Assets/sapo_sentado.jpg");
+    Texture2D texturaProtaAndando = LoadTexture("Protagonista/Assets/sapo_sentado.jpg");
+    Texture2D texturaProtaAtaqueMelee = LoadTexture("Protagonista/Assets/sapo_sentado.jpg");
+    Texture2D texturaProtaAtaqueRanged = LoadTexture("Protagonista/Assets/sapo_sentado.jpg");
+    Texture2D texturaProtaDano = LoadTexture("Protagonista/Assets/sapo_sentado.jpg");
+    Texture2D texturaProtaMorte = LoadTexture("Protagonista/Assets/sapo_sentado.jpg");
+
+    Animacao animacoesProta[ANIM_TOTAL];
+
+    animacoesProta[ANIM_PARADO] = Animacao(
+        texturaProtaParado,
+        1,
+        0.25f,
+        true
+    );
+
+    animacoesProta[ANIM_ANDANDO] = Animacao(
+        texturaProtaAndando,
+        1,
+        0.12f,
+        true
+    );
+
+    animacoesProta[ANIM_ATAQUE_MELEE] = Animacao(
+        texturaProtaAtaqueMelee,
+        1,
+        0.08f,
+        false
+    );
+
+    animacoesProta[ANIM_ATAQUE_RANGED] = Animacao(
+        texturaProtaAtaqueRanged,
+        1,
+        0.08f,
+        false
+    );
+
+    animacoesProta[ANIM_DANO] = Animacao(
+        texturaProtaDano,
+        1,
+        0.10f,
+        false
+    );
+
+    animacoesProta[ANIM_MORTE] = Animacao(
+        texturaProtaMorte,
+        1,
+        0.15f,
+        false
+    );
+
     Texture2D fundo = LoadTexture("Assets_gerais/background.png");
 
     unique_ptr<DadosJogo> jogoAtual = nullptr;
 
+    bool podeUsarB = true;
+
     while (!WindowShouldClose()) {
+        if (IsKeyReleased(KEY_B)) {
+            podeUsarB = true;
+        }
+
         if (status == MENU) {
             BeginDrawing();
 
@@ -116,6 +249,11 @@ int main() {
                 jogoAtual = make_unique<DadosJogo>(
                     criarNovoJogo(largura, altura)
                 );
+
+                jogoAtual->animacaoProta = ANIM_PARADO;
+                animacoesProta[ANIM_PARADO].reiniciar();
+
+                podeUsarB = true;
 
                 status = JOGANDO;
             }
@@ -140,6 +278,12 @@ int main() {
             DadosJogo& jogo = *jogoAtual;
 
             if (jogo.p.getVida() <= 0) {
+                trocarAnimacaoProta(
+                    jogo,
+                    animacoesProta,
+                    ANIM_MORTE
+                );
+
                 status = GAME_OVER;
                 continue;
             }
@@ -148,6 +292,12 @@ int main() {
                 status = PAUSADO;
                 continue;
             }
+
+            bool protagonistaAndando =
+                IsKeyDown(KEY_W) ||
+                IsKeyDown(KEY_A) ||
+                IsKeyDown(KEY_S) ||
+                IsKeyDown(KEY_D);
 
             if (IsKeyDown(KEY_E)) {
                 if (jogo.cooldown_interacao <= 0) {
@@ -173,7 +323,18 @@ int main() {
                 }
             }
 
-            if (IsKeyPressed(KEY_B)) {
+            if (IsKeyPressed(KEY_B) && podeUsarB) {
+                podeUsarB = false;
+
+                jogo.abaMochila = 0;
+                jogo.itemSelecionado = 0;
+
+                trocarAnimacaoProta(
+                    jogo,
+                    animacoesProta,
+                    ANIM_PARADO
+                );
+
                 status = MOCHILA;
                 continue;
             }
@@ -198,6 +359,12 @@ int main() {
                 );
 
                 jogo.mapa1.addDamageAreas(hitProta);
+
+                trocarAnimacaoProta(
+                    jogo,
+                    animacoesProta,
+                    ANIM_ATAQUE_MELEE
+                );
             }
 
             if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
@@ -210,6 +377,12 @@ int main() {
 
                 if (hitProta.has_value()) {
                     jogo.projeteis.push_back(*hitProta);
+
+                    trocarAnimacaoProta(
+                        jogo,
+                        animacoesProta,
+                        ANIM_ATAQUE_RANGED
+                    );
                 }
             }
 
@@ -260,6 +433,12 @@ int main() {
             if (jogo.cooldown_dano == 0) {
                 if (checa_tomar_dano(jogo.p, jogo.mapa1.getDamageAreas())) {
                     jogo.cooldown_dano = 60;
+
+                    trocarAnimacaoProta(
+                        jogo,
+                        animacoesProta,
+                        ANIM_DANO
+                    );
                 }
             }
 
@@ -267,39 +446,60 @@ int main() {
                 jogo.cooldown_dano--;
             }
 
+            bool animacaoDeAcao =
+                jogo.animacaoProta == ANIM_ATAQUE_MELEE ||
+                jogo.animacaoProta == ANIM_ATAQUE_RANGED ||
+                jogo.animacaoProta == ANIM_DANO;
+
+            if (animacaoDeAcao) {
+                int indiceAnimacao = obterIndiceAnimacaoSeguro(jogo);
+
+                if (animacoesProta[indiceAnimacao].terminou()) {
+                    if (protagonistaAndando) {
+                        trocarAnimacaoProta(
+                            jogo,
+                            animacoesProta,
+                            ANIM_ANDANDO
+                        );
+                    } else {
+                        trocarAnimacaoProta(
+                            jogo,
+                            animacoesProta,
+                            ANIM_PARADO
+                        );
+                    }
+                }
+            } else {
+                if (protagonistaAndando) {
+                    trocarAnimacaoProta(
+                        jogo,
+                        animacoesProta,
+                        ANIM_ANDANDO
+                    );
+                } else {
+                    trocarAnimacaoProta(
+                        jogo,
+                        animacoesProta,
+                        ANIM_PARADO
+                    );
+                }
+            }
+
+            atualizarAnimacaoAtual(
+                jogo,
+                animacoesProta
+            );
+
             BeginDrawing();
 
             ClearBackground(RAYWHITE);
 
-            desenharFundo(
+            desenharMundoAtual(
+                jogo,
                 fundo,
-                jogo.mapa1,
+                animacoesProta,
                 largura,
                 altura
-            );
-
-            desenha_mapa_e_prota(
-                jogo.mapa1,
-                jogo.p,
-                largura,
-                altura,
-                texturaProtagonista
-            );
-
-            desenharInimigos(
-                jogo.inimigos,
-                jogo.mapa1
-            );
-
-            desenharProjeteis(
-                jogo.projeteis,
-                jogo.mapa1
-            );
-
-            desenharItens(
-                jogo.itens,
-                jogo.posicoesItens,
-                jogo.mapa1
             );
 
             desenharHUD(
@@ -335,6 +535,11 @@ int main() {
             }
 
             DadosJogo& jogo = *jogoAtual;
+
+            atualizarAnimacaoAtual(
+                jogo,
+                animacoesProta
+            );
 
             if (IsKeyDown(KEY_E)) {
                 if (jogo.cooldown_interacao <= 0) {
@@ -376,35 +581,12 @@ int main() {
 
             ClearBackground(RAYWHITE);
 
-            desenharFundo(
+            desenharMundoAtual(
+                jogo,
                 fundo,
-                jogo.mapa1,
+                animacoesProta,
                 largura,
                 altura
-            );
-
-            desenha_mapa_e_prota(
-                jogo.mapa1,
-                jogo.p,
-                largura,
-                altura,
-                texturaProtagonista
-            );
-
-            desenharInimigos(
-                jogo.inimigos,
-                jogo.mapa1
-            );
-
-            desenharProjeteis(
-                jogo.projeteis,
-                jogo.mapa1
-            );
-
-            desenharItens(
-                jogo.itens,
-                jogo.posicoesItens,
-                jogo.mapa1
             );
 
             desenharHUD(
@@ -435,20 +617,16 @@ int main() {
 
             DadosJogo& jogo = *jogoAtual;
 
-            if (IsKeyPressed(KEY_B)) {
+            if (IsKeyPressed(KEY_B) && podeUsarB) {
+                podeUsarB = false;
+
                 status = JOGANDO;
                 continue;
             }
 
-            if (IsKeyPressed(KEY_TAB)) {
-                if (
-                    jogo.itemSelecionado >= jogo.p.getTamMochila() ||
-                    jogo.itemSelecionado >= (int)jogo.p.getMochila().size() - 1
-                ) {
-                    jogo.itemSelecionado = 0;
-                } else {
-                    jogo.itemSelecionado++;
-                }
+            if (IsKeyPressed(KEY_ESCAPE)) {
+                status = PAUSADO;
+                continue;
             }
 
             if (IsKeyPressed(KEY_Q)) {
@@ -459,40 +637,36 @@ int main() {
                 jogo.abaMochila = 1;
             }
 
+            if (jogo.abaMochila < 0 || jogo.abaMochila > 1) {
+                jogo.abaMochila = 0;
+            }
+
+            int tamanhoMochila = (int)jogo.p.getMochila().size();
+
+            if (tamanhoMochila <= 0) {
+                jogo.itemSelecionado = 0;
+            }
+            else {
+                if (jogo.itemSelecionado < 0) {
+                    jogo.itemSelecionado = 0;
+                }
+
+                if (jogo.itemSelecionado >= tamanhoMochila) {
+                    jogo.itemSelecionado = tamanhoMochila - 1;
+                }
+
+                if (IsKeyPressed(KEY_TAB)) {
+                    jogo.itemSelecionado++;
+
+                    if (jogo.itemSelecionado >= tamanhoMochila) {
+                        jogo.itemSelecionado = 0;
+                    }
+                }
+            }
+
             BeginDrawing();
 
-            ClearBackground(RAYWHITE);
-
-            desenharFundo(
-                fundo,
-                jogo.mapa1,
-                largura,
-                altura
-            );
-
-            desenha_mapa_e_prota(
-                jogo.mapa1,
-                jogo.p,
-                largura,
-                altura,
-                texturaProtagonista
-            );
-
-            desenharInimigos(
-                jogo.inimigos,
-                jogo.mapa1
-            );
-
-            desenharProjeteis(
-                jogo.projeteis,
-                jogo.mapa1
-            );
-
-            desenharItens(
-                jogo.itens,
-                jogo.posicoesItens,
-                jogo.mapa1
-            );
+            ClearBackground(Color{18, 18, 22, 255});
 
             desenharMochila(
                 jogo.p,
@@ -513,39 +687,21 @@ int main() {
 
             DadosJogo& jogo = *jogoAtual;
 
+            atualizarAnimacaoAtual(
+                jogo,
+                animacoesProta
+            );
+
             BeginDrawing();
 
             ClearBackground(RAYWHITE);
 
-            desenharFundo(
+            desenharMundoAtual(
+                jogo,
                 fundo,
-                jogo.mapa1,
+                animacoesProta,
                 largura,
                 altura
-            );
-
-            desenha_mapa_e_prota(
-                jogo.mapa1,
-                jogo.p,
-                largura,
-                altura,
-                texturaProtagonista
-            );
-
-            desenharInimigos(
-                jogo.inimigos,
-                jogo.mapa1
-            );
-
-            desenharProjeteis(
-                jogo.projeteis,
-                jogo.mapa1
-            );
-
-            desenharItens(
-                jogo.itens,
-                jogo.posicoesItens,
-                jogo.mapa1
             );
 
             EndDrawing();
@@ -563,35 +719,12 @@ int main() {
 
             ClearBackground(RAYWHITE);
 
-            desenharFundo(
+            desenharMundoAtual(
+                jogo,
                 fundo,
-                jogo.mapa1,
+                animacoesProta,
                 largura,
                 altura
-            );
-
-            desenha_mapa_e_prota(
-                jogo.mapa1,
-                jogo.p,
-                largura,
-                altura,
-                texturaProtagonista
-            );
-
-            desenharInimigos(
-                jogo.inimigos,
-                jogo.mapa1
-            );
-
-            desenharProjeteis(
-                jogo.projeteis,
-                jogo.mapa1
-            );
-
-            desenharItens(
-                jogo.itens,
-                jogo.posicoesItens,
-                jogo.mapa1
             );
 
             AcaoMenu acao = desenharMenuPause(
@@ -606,6 +739,7 @@ int main() {
             }
             else if (acao == ACAO_VOLTAR_MENU) {
                 jogoAtual.reset();
+                podeUsarB = true;
                 status = MENU;
             }
             else if (acao == ACAO_SAIR) {
@@ -630,10 +764,16 @@ int main() {
                     criarNovoJogo(largura, altura)
                 );
 
+                jogoAtual->animacaoProta = ANIM_PARADO;
+                animacoesProta[ANIM_PARADO].reiniciar();
+
+                podeUsarB = true;
+
                 status = JOGANDO;
             }
             else if (acao == ACAO_VOLTAR_MENU) {
                 jogoAtual.reset();
+                podeUsarB = true;
                 status = MENU;
             }
             else if (acao == ACAO_SAIR) {
@@ -655,6 +795,7 @@ int main() {
 
             if (acao == ACAO_VOLTAR_MENU) {
                 jogoAtual.reset();
+                podeUsarB = true;
                 status = MENU;
             }
             else if (acao == ACAO_SAIR) {
@@ -663,7 +804,13 @@ int main() {
         }
     }
 
-    UnloadTexture(texturaProtagonista);
+    UnloadTexture(texturaProtaParado);
+    UnloadTexture(texturaProtaAndando);
+    UnloadTexture(texturaProtaAtaqueMelee);
+    UnloadTexture(texturaProtaAtaqueRanged);
+    UnloadTexture(texturaProtaDano);
+    UnloadTexture(texturaProtaMorte);
+
     UnloadTexture(fundo);
     descarregarTexturasItens();
 

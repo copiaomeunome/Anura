@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <utility>
 
 #include "Item/Item_Arma_Ranged/Item_Arma_Ranged.h"
 
@@ -17,6 +18,18 @@ Color pegarCorRaridade(string raridade);
 Texture2D pegarTexturaItem(string caminho);
 void desenharTexturaNoRetangulo(Texture2D textura, Rectangle destino);
 void desenharTextoQuebrado(string texto, int x, int y, int larguraMaxima, int tamanhoFonte, Color cor);
+
+void desenharSlotEquipado(
+    string titulo,
+    Item item,
+    Rectangle slot
+);
+
+void desenharSlotEquipadoRanged(
+    string titulo,
+    Item_Arma_Ranged item,
+    Rectangle slot
+);
 
 Texture2D pegarTexturaItem(string caminho) {
     if (caminho.empty()) {
@@ -218,6 +231,24 @@ void desenha_mapa_e_prota(
         (float)texturaProtagonista.height
     };
 
+    desenha_mapa_e_prota(
+        mapa1,
+        p,
+        largura,
+        altura,
+        texturaProtagonista,
+        sourceProtagonista
+    );
+}
+
+void desenha_mapa_e_prota(
+    Mapa& mapa1,
+    Protagonista& p,
+    int largura,
+    int altura,
+    Texture2D texturaProtagonista,
+    Rectangle sourceProtagonista
+) {
     Rectangle destProtagonista = {
         (float)(p.getX() - mapa1.getCamera().first),
         (float)(p.getY() - mapa1.getCamera().second),
@@ -962,7 +993,6 @@ void desenharSlotEquipadoRanged(
         Color{220, 220, 180, 255}
     );
 }
-
 void desenharMochila(
     Protagonista& p,
     int largura,
@@ -970,6 +1000,29 @@ void desenharMochila(
     int itemSelecionado,
     int abaMochila
 ) {
+    if (largura <= 0 || altura <= 0) {
+        return;
+    }
+
+    if (abaMochila < 0 || abaMochila > 1) {
+        abaMochila = 0;
+    }
+
+    vector<Item> mochila = p.getMochila();
+
+    if ((int)mochila.size() <= 0) {
+        itemSelecionado = 0;
+    }
+    else {
+        if (itemSelecionado < 0) {
+            itemSelecionado = 0;
+        }
+
+        if (itemSelecionado >= (int)mochila.size()) {
+            itemSelecionado = (int)mochila.size() - 1;
+        }
+    }
+
     DrawRectangle(
         0,
         0,
@@ -980,6 +1033,23 @@ void desenharMochila(
 
     float painelW = largura * 0.78f;
     float painelH = altura * 0.72f;
+
+    if (painelW < 600.0f) {
+        painelW = 600.0f;
+    }
+
+    if (painelH < 420.0f) {
+        painelH = 420.0f;
+    }
+
+    if (painelW > largura - 40.0f) {
+        painelW = largura - 40.0f;
+    }
+
+    if (painelH > altura - 40.0f) {
+        painelH = altura - 40.0f;
+    }
+
     float painelX = (largura - painelW) / 2.0f;
     float painelY = (altura - painelH) / 2.0f;
 
@@ -1067,23 +1137,48 @@ void desenharMochila(
         RAYWHITE
     );
 
-    vector<Item> mochila = p.getMochila();
-
     float conteudoY = painelY + 140.0f;
 
     if (abaMochila == 0) {
         int colunas = 5;
         int totalSlots = p.getTamMochila();
+
+        if (totalSlots <= 0) {
+            totalSlots = 1;
+        }
+
+        if (totalSlots > 40) {
+            totalSlots = 40;
+        }
+
         int linhas = (totalSlots + colunas - 1) / colunas;
 
+        if (linhas <= 0) {
+            linhas = 1;
+        }
+
         float espaco = 14.0f;
-        float areaGradeW = painelW * 0.60f;
-        float areaGradeH = painelH - 180.0f;
+        float areaGradeW = painelW * 0.58f;
+        float areaGradeH = painelH - 185.0f;
+
+        if (areaGradeW < 250.0f) {
+            areaGradeW = 250.0f;
+        }
+
+        if (areaGradeH < 160.0f) {
+            areaGradeH = 160.0f;
+        }
 
         float slotW = (areaGradeW - espaco * (colunas - 1)) / colunas;
-        float slotH = linhas > 0
-            ? (areaGradeH - espaco * (linhas - 1)) / linhas
-            : areaGradeH;
+        float slotH = (areaGradeH - espaco * (linhas - 1)) / linhas;
+
+        if (slotW < 35.0f) {
+            slotW = 35.0f;
+        }
+
+        if (slotH < 35.0f) {
+            slotH = 35.0f;
+        }
 
         float tamanhoSlot = min(slotW, slotH);
 
@@ -1111,9 +1206,11 @@ void desenharMochila(
 
             if (selecionado) {
                 corSlot = Color{85, 65, 35, 255};
-            } else if (ocupado) {
+            }
+            else if (ocupado) {
                 corSlot = Color{55, 48, 38, 255};
-            } else {
+            }
+            else {
                 corSlot = Color{32, 31, 35, 255};
             }
 
@@ -1164,6 +1261,14 @@ void desenharMochila(
         float detalhesW = painelX + painelW - detalhesX - 35.0f;
         float detalhesH = areaGradeH;
 
+        if (detalhesW < 220.0f) {
+            detalhesW = 220.0f;
+        }
+
+        if (detalhesH < 220.0f) {
+            detalhesH = 220.0f;
+        }
+
         Rectangle detalhes = {
             detalhesX,
             detalhesY,
@@ -1192,21 +1297,12 @@ void desenharMochila(
             RAYWHITE
         );
 
-        if (mochila.size() == 0) {
+        if ((int)mochila.size() <= 0) {
             DrawText(
                 "Mochila vazia",
                 (int)(detalhesX + 20),
                 (int)(detalhesY + 70),
                 22,
-                Color{170, 170, 170, 255}
-            );
-        }
-        else if (itemSelecionado < 0 || itemSelecionado >= (int)mochila.size()) {
-            DrawText(
-                "Nenhum item selecionado",
-                (int)(detalhesX + 20),
-                (int)(detalhesY + 70),
-                20,
                 Color{170, 170, 170, 255}
             );
         }
@@ -1247,8 +1343,12 @@ void desenharMochila(
                 pegarCorRaridade(item.getRaridade())
             );
 
+            string nome = item.getNome();
+            string raridade = item.getRaridade();
+            string imagem = item.getImagem();
+
             DrawText(
-                item.getNome().c_str(),
+                nome.c_str(),
                 (int)(detalhesX + 20),
                 (int)(detalhesY + 180),
                 24,
@@ -1256,11 +1356,11 @@ void desenharMochila(
             );
 
             DrawText(
-                TextFormat("Raridade: %s", item.getRaridade().c_str()),
+                TextFormat("Raridade: %s", raridade.c_str()),
                 (int)(detalhesX + 20),
                 (int)(detalhesY + 220),
                 20,
-                pegarCorRaridade(item.getRaridade())
+                pegarCorRaridade(raridade)
             );
 
             DrawText(
@@ -1280,7 +1380,7 @@ void desenharMochila(
             );
 
             desenharTextoQuebrado(
-                item.getImagem(),
+                imagem,
                 (int)(detalhesX + 20),
                 (int)(detalhesY + 325),
                 (int)(detalhesW - 40),
@@ -1341,80 +1441,87 @@ void desenharMochila(
         float infoW = painelX + painelW - infoX - 45.0f;
         float infoH = 2 * slotH + espacoY;
 
-        Rectangle info = {
-            infoX,
-            infoY,
-            infoW,
-            infoH
-        };
+        if (infoW > 180.0f) {
+            Rectangle info = {
+                infoX,
+                infoY,
+                infoW,
+                infoH
+            };
 
-        DrawRectangleRounded(
-            info,
-            0.05f,
-            12,
-            Color{35, 34, 42, 245}
-        );
+            DrawRectangleRounded(
+                info,
+                0.05f,
+                12,
+                Color{35, 34, 42, 245}
+            );
 
-        DrawRectangleLinesEx(
-            info,
-            2,
-            Color{110, 100, 85, 255}
-        );
+            DrawRectangleLinesEx(
+                info,
+                2,
+                Color{110, 100, 85, 255}
+            );
 
-        DrawText(
-            "Resumo",
-            (int)(infoX + 20),
-            (int)(infoY + 20),
-            28,
-            RAYWHITE
-        );
+            DrawText(
+                "Resumo",
+                (int)(infoX + 20),
+                (int)(infoY + 20),
+                28,
+                RAYWHITE
+            );
 
-        pair<int,int> municao = armaRanged.getMunicao();
+            pair<int,int> municao = armaRanged.getMunicao();
 
-        DrawText(
-            TextFormat("Ranged: %s", armaRanged.getNome().c_str()),
-            (int)(infoX + 20),
-            (int)(infoY + 75),
-            20,
-            RAYWHITE
-        );
+            string nomeRanged = armaRanged.getNome();
+            string nomeMelee = armaMelee.getNome();
+            string nomeArmadura = armadura.getNome();
+            string nomeCapacete = capacete.getNome();
 
-        DrawText(
-            TextFormat("Municao: %d/%d", municao.first, municao.second),
-            (int)(infoX + 20),
-            (int)(infoY + 105),
-            20,
-            Color{230, 220, 170, 255}
-        );
+            DrawText(
+                TextFormat("Ranged: %s", nomeRanged.c_str()),
+                (int)(infoX + 20),
+                (int)(infoY + 75),
+                20,
+                RAYWHITE
+            );
 
-        DrawText(
-            TextFormat("Melee: %s", armaMelee.getNome().c_str()),
-            (int)(infoX + 20),
-            (int)(infoY + 150),
-            20,
-            RAYWHITE
-        );
+            DrawText(
+                TextFormat("Municao: %d/%d", municao.first, municao.second),
+                (int)(infoX + 20),
+                (int)(infoY + 105),
+                20,
+                Color{230, 220, 170, 255}
+            );
 
-        DrawText(
-            TextFormat("Armadura: %s", armadura.getNome().c_str()),
-            (int)(infoX + 20),
-            (int)(infoY + 195),
-            20,
-            RAYWHITE
-        );
+            DrawText(
+                TextFormat("Melee: %s", nomeMelee.c_str()),
+                (int)(infoX + 20),
+                (int)(infoY + 150),
+                20,
+                RAYWHITE
+            );
 
-        DrawText(
-            TextFormat("Capacete: %s", capacete.getNome().c_str()),
-            (int)(infoX + 20),
-            (int)(infoY + 240),
-            20,
-            RAYWHITE
-        );
+            DrawText(
+                TextFormat("Armadura: %s", nomeArmadura.c_str()),
+                (int)(infoX + 20),
+                (int)(infoY + 195),
+                20,
+                RAYWHITE
+            );
+
+            DrawText(
+                TextFormat("Capacete: %s", nomeCapacete.c_str()),
+                (int)(infoX + 20),
+                (int)(infoY + 240),
+                20,
+                RAYWHITE
+            );
+        }
     }
 
     DrawText(
-        "B: voltar | Q/E: trocar aba",
-        (int)(painelX + painelW - 270),
+        "B: voltar | Q/E: trocar aba | TAB: selecionar",
+        (int)(painelX + painelW - 430),
         (int)(painelY + painelH - 45),
         20,
         Color{210, 210, 210, 255}
@@ -1464,6 +1571,7 @@ AcaoMenu desenharMenuPrincipal(int largura, int altura) {
 
     return ACAO_NENHUMA;
 }
+
 AcaoMenu desenharMenuPause(int largura, int altura) {
     DrawRectangle(
         0,
@@ -1516,6 +1624,7 @@ AcaoMenu desenharMenuPause(int largura, int altura) {
 
     return ACAO_NENHUMA;
 }
+
 AcaoMenu desenharMenuGameOver(int largura, int altura) {
     DrawText(
         "GAME OVER",
@@ -1549,6 +1658,7 @@ AcaoMenu desenharMenuGameOver(int largura, int altura) {
 
     return ACAO_NENHUMA;
 }
+
 AcaoMenu desenharMenuVitoria(int largura, int altura) {
     DrawText(
         "VITORIA",

@@ -15,6 +15,8 @@ DadosJogo::DadosJogo(
     abaMochila = 0;
     current_map = 0;
     falaAtual = "nada";
+
+    animacaoProta = ANIM_PARADO;
 }
 
 DadosJogo criarNovoJogo(int largura, int altura) {

@@ -17,6 +17,7 @@
 #include "Item/Item_Arma_Ranged/Item_Arma_Ranged.h"
 #include "Dialogo/Dialogo.h"
 #include "NPC/NPC.h"
+#include "Animacao.h"
 
 using namespace std;
 
@@ -34,6 +35,7 @@ struct DadosJogo {
     int itemSelecionado;
     int abaMochila;
     int current_map;
+    EstadoAnimacaoProta animacaoProta;
 
     string falaAtual;
 
