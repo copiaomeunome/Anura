@@ -5,7 +5,17 @@
 #include "../Projetil/Projetil.h"
 #include <cmath>
 Protagonista::Protagonista(int v, pair<int,int> p, pair<int,int> t, int ms, int rm, Item_Arma_Ranged arma_r, int tm)
-    : vida(v), posicao(p), tamanho(t), move_speed(ms), range_melee(rm), arma_ranged(arma_r), tam_mochila(tm) {}
+    : vida(v),
+      posicao(p),
+      tamanho(t),
+      move_speed(ms),
+      range_melee(rm),
+      arma_ranged(arma_r),
+      arma_melee("Sem arma melee", "Comum", 0.0f, 0, 0.0f, "", {0, 0}),
+      mochila(),
+      tam_mochila(tm),
+      capacete("Sem capacete", "Comum", 0.0f, ""),
+      armadura("Sem armadura", "Comum", 0.0f, "") {}
 
 int Protagonista::getX() {return posicao.first;}
 int Protagonista::getY() {return posicao.second;}
@@ -18,6 +28,10 @@ int Protagonista::getMS() {return move_speed;}
 int Protagonista::getVida() {return vida;}
 vector<Item> Protagonista::getMochila(){return mochila;}
 int Protagonista::getTamMochila(){return tam_mochila;}
+Item Protagonista::getCapacete(){return capacete;}
+Item Protagonista::getArmadura(){return armadura;}
+Item_Arma_Ranged Protagonista::getArmaRanged(){return arma_ranged;}
+Item Protagonista::getArmaMelee(){return arma_melee;}
 
 DamageArea Protagonista::bater_melee(int x, int y){
     float centroX = posicao.first + tamanho.first / 2.0f;
@@ -44,7 +58,11 @@ DamageArea Protagonista::bater_melee(int x, int y){
     return da;
 }
 
-Projetil Protagonista::bater_Ranged(int x, int y){
+optional<Projetil> Protagonista::bater_Ranged(int x, int y){
+    if (!arma_ranged.consumirMunicao()) {
+        return nullopt;
+    }
+
     pair<int,int> centro = {(posicao.first+tamanho.first/2),(posicao.second+tamanho.second/2)};
     pair<int,int> centroP = {x,y};
 

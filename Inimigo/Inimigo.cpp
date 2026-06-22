@@ -45,16 +45,8 @@ vector<Item> Inimigo::dropar(){
 
     for(Item i : drop){
         float sorteio = (float)rand() / (float)RAND_MAX;
-
-        cout << "Item: " << i.getNome()
-             << " | dropRate: " << i.getDropRate()
-             << " | sorteio: " << sorteio << endl;
-
         if(sorteio <= i.getDropRate()){
-            cout << "DROPOU" << endl;
             itens.push_back(i);
-        } else {
-            cout << "NAO DROPOU" << endl;
         }
     }
 
