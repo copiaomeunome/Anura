@@ -1,0 +1,1 @@
+g++ -std=c++17 -Wall -Wextra Engine/Graphics/Graphics.cpp -o Graphics.exe -DGLEW_STATIC -IEngine/Dependencies/GLEW/include -LEngine/Dependencies/GLEW/lib/Release/x64 -lglew32s -lglfw3 -lopengl32 -lgdi32

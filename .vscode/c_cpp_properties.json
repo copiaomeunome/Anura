@@ -1,0 +1,16 @@
+{
+  "configurations": [
+    {
+      "name": "MSYS2 UCRT64",
+      "compilerPath": "C:/msys64/ucrt64/bin/g++.exe",
+      "includePath": [
+        "${workspaceFolder}/**",
+        "${workspaceFolder}/Engine/Dependencies/GLEW/include",
+        "C:/msys64/ucrt64/include"
+      ],
+      "cppStandard": "c++17",
+      "intelliSenseMode": "windows-gcc-x64"
+    }
+  ],
+  "version": 4
+}
